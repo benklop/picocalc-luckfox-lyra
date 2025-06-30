@@ -1,82 +1,90 @@
-# Picocalc Luckfox Lyra
+# PicoCalc Lyra Build System
 
-Based on Luckfox_Lyra_SDK_250429
+This repository provides a Docker-based build system for creating custom BuildRoot Linux images for the LuckFox Lyra, specifically tailored to run on the ClockworkPi PicoCalc.
 
-Image and SDK [Download](https://mega.nz/folder/hn8iUDzY#Db-FwlFiGOg4CetCUm3r9Q)
+## Prerequisites
 
-## 1. Prepare SDK
+- Docker installed on your system
+- The LuckFox Lyra SDK tarball (`Luckfox_Lyra_SDK_*.tar.gz`) placed in the root directory
 
-### 1.1. SDK Environment Deployment
+## Quick Start
 
-[Luckfox-Lyra](https://wiki.luckfox.com/Luckfox-Lyra/SDK)
+1. **Download the SDK**: Place the LuckFox Lyra SDK tarball in the root directory of this repository.
 
-### 1.2. Clone Picocalc-Luckfox-Lyra
+2. **Run the build**: Execute the build script:
+   ```bash
+   ./build.sh
+   ```
 
-1. Change to the SDK directory
+3. **Get the results**: After the build completes, your images will be available in the `./output/` directory:
+   - `update.img` - Complete system image (main file to flash)
+   - `boot.img` - Kernel image
+   - `rootfs.img` - Root filesystem image
+   - `uboot.img` - U-Boot bootloader
+   - `MiniLoaderAll.bin` - SPL bootloader
+   - `parameter.txt` - Partition table information
 
-```shell
-cd $SDK_DIR
+## What This Build Does
+
+The build system:
+
+1. **Sets up the LuckFox Lyra SDK** in an Ubuntu 22.04 container with all required dependencies
+2. **Applies PicoCalc-specific modifications**:
+   - Kernel configuration changes for RTC and RTL8188FU WiFi support
+   - Device tree updates for the PicoCalc hardware
+   - Buildroot configuration for SD card storage
+   - RTL8188FU WiFi driver patch
+3. **Builds the complete system** using the configured toolchain
+4. **Extracts all build artifacts** to the `./output/` directory for easy access
+
+## Manual Docker Usage
+
+If you prefer to run the Docker container manually:
+
+```bash
+# Build the Docker image
+docker build -t picocalc-lyra-builder .
+
+# Run the container with output volume mount
+docker run --rm -v "$(pwd)/output:/opt/output" picocalc-lyra-builder
 ```
 
-2. Clone
+## File Structure
 
-```shell
-git clone https://github.com/nekocharm/picocalc-luckfox-lyra.git
-```
+- `Dockerfile` - Docker container definition
+- `build.sh` - Main build script (run this)
+- `src/` - Source files and configurations:
+  - `build.sh` - Internal build script run inside the container
+  - `*.config` - Kernel configuration files
+  - `*.dts` - Device tree source files
+  - `*defconfig` - Buildroot configuration
+  - `*.patch` - Patches for the build system
+  - `pre-build-picocalc.sh` - Pre-build script for additional customizations
 
-The SDK directory structure will be like
+## Build Output
 
-```
-├── build.sh -> device/rockchip/common/scripts/build.sh ---- SDK compilation script
-├── app ----------------------------- Contains upper-layer applications (mainly demo apps)
-├── buildroot ----------------------- Root filesystem developed based on Buildroot (2024)
-├── device ----------------- Contains chip board-level configurations and scripts/files for SDK compilation and firmware packaging
-├── docs ---------------------------- Contains general development guidance documents, chip platform-related documents, Linux system development-related documents, and other reference materials
-├── external --------------------- Contains third-party related repositories, including display, audio and video, cameras,networking, security, etc.
-├── kernel -------------------------- Contains code for Kernel development
-├── output -------------------------- Stores information on generated firmware, compilation information, XML files, host environment, etc.
-├── picocalc-luckfox-lyra------------ This repository
-├── prebuilts ----------------------- Contains cross-compilation toolchains
-├── rkbin --------------------------- Contains Rockchip-related binaries and tools
-├── rockdev ------------------------- Stores compiled output firmware, actually a symlink to output/firmware 
-├── tools --------------------------- Contains commonly used tools for Linux and Windows operating systems 
-├── u-boot -------------------------- Contains U-Boot code developed based on version v2017.09
-└── yocto --------------------------- Contains root filesystem developed based on Yocto 5.0
-```
+The primary output is `update.img`, which contains the complete system image ready to be flashed to an SD card for use with the PicoCalc. Individual components are also provided for advanced users who need to flash specific partitions.
 
-3. Prepare
+## Customization
 
-```shell
-cd picocalc-luckfox-lyra
-./prepare.sh
-```
+To customize the build:
 
-## 2. Build
+1. Modify files in the `src/` directory
+2. Update kernel configurations in `src/*.config`
+3. Modify device tree in `src/*.dts`
+4. Adjust Buildroot packages in `src/*defconfig`
+5. Add additional patches or scripts as needed
 
-```shell
-./build.sh lunch
+## Troubleshooting
 
-############### Rockchip Linux SDK ###############
+- Ensure you have the correct LuckFox Lyra SDK tarball in the root directory
+- Check that Docker is running and you have sufficient disk space
+- Build logs are displayed during the process for debugging
 
-Manifest: luckfox_linux6.1_rk3506_release_v1.2_20250311.xml
+## Credits
 
-Log colors: message notice warning error fatal
-
-Log saved at /home/docker/luckfox/output/sessions/2025-05-15_22-41-24
-Pick a defconfig:
-
-1. luckfox_lyra_buildroot_sdmmc_defconfig
-2. luckfox_lyra_buildroot_spinand_defconfig
-3. luckfox_lyra_plus_buildroot_sdmmc_defconfig
-4. luckfox_lyra_plus_buildroot_spinand_defconfig
-5. luckfox_lyra_plus_ubuntu_sdmmc_defconfig
-6. luckfox_lyra_ubuntu_sdmmc_defconfig
-7. luckfox_lyra_ultra-w_buildroot_emmc_defconfig
-8. luckfox_lyra_ultra-w_ubuntu_emmc_defconfig
-9. luckfox_lyra_ultra_buildroot_emmc_defconfig
-10. luckfox_lyra_ultra_ubuntu_emmc_defconfig
-11. picocalc_luckfox_lyra_buildroot_sdmmc_defconfig
-Which would you like? [1]:11
-
-./build.sh
-```
+Based on the work from:
+- [PicoCalc-uf2 project](https://github.com/cjstoddard/PicoCalc-uf2)
+- [picocalc-luckfox-lyra](https://github.com/nekocharm/picocalc-luckfox-lyra)
+- [picocalc_luckfox_lyra](https://github.com/hisptoot/picocalc_luckfox_lyra)
+- LuckFox Technology for the Lyra SDK

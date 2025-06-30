@@ -70,13 +70,7 @@
 		};
 	};
 
-	softpwm_sound: softpwm-sound {
-		compatible = "picocalc,softpwm-sound";
-		memory-region = <&shmem_reserved>;
-		shmem-offset = <0>;
-		shmem-length = <0x20>;
-		status = "okay";
-	};
+'?'
 
 	vcc_sys: vcc-sys {
 		compatible = "regulator-fixed";
@@ -223,6 +217,12 @@
 		compatible = "picocalc,picocalc-keyboard";
 		reg = <0x1f>;
 	};
+
+    rtc: rtc@68 {
+        compatible = "dallas,ds3231";
+        reg = <0x68>;
+        status = "okay";
+    };
 
 };
 

@@ -1,29 +1,8 @@
 #!/bin/bash
 
-function create_symlink(){
-    for file in `ls $1`
-    do
-        if [ -d $1"/"$file ]
-        then
-            if [ "$file" != "picocalc-overlay" ]
-            then
-                create_symlink $1"/"$file $2"/"$file
-            fi
-        else
-            local path_src=$1"/"$file  
-            local path_sdk=$2"/"$file
-            if [ ! -d "$2" ]
-            then
-                mkdir -p $2
-            fi
-            ln -sfr $path_src $path_sdk
-        fi
-    done
-}
-
 CUR_PATH=$(cd "$(dirname $0)";pwd)
-SRC_PATH=$CUR_PATH/src
-SDK_PATH=$CUR_PATH/..
+SRC_PATH=$CUR_PATH/base
+SDK_PATH=$(realpath $CUR_PATH/..)
 IFS=$'\n'
 
 echo "SRC_PATH: $SRC_PATH"
@@ -48,10 +27,13 @@ else
     exit
 fi
 
-create_symlink $SRC_PATH $SDK_PATH
+cp -rfv $SRC_PATH/* $SDK_PATH/
 
 if [ -d "$SDK_PATH/buildroot/board/rockchip/rk3506/picocalc-overlay" ]
 then
     rm -rf $SDK_PATH/buildroot/board/rockchip/rk3506/picocalc-overlay
 fi
 ln -sr $SRC_PATH/buildroot/board/rockchip/rk3506/picocalc-overlay $SDK_PATH/buildroot/board/rockchip/rk3506/picocalc-overlay
+
+# Fix issue with running build in docker
+sed -i 's/btrfs/btrfs | overlay/' $SDK_PATH/device/rockchip/common/scripts/check-sdk.sh

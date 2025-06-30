@@ -1,0 +1,21 @@
+# Build output directory - contains large binary files
+output/
+
+# SDK tarball - large file that should be downloaded separately
+Luckfox_Lyra_SDK_*.tar.gz
+Lyra-SDK/
+# Ccache directory - used for caching build artifacts
+.ccache/
+
+# Docker build cache and temporary files
+.dockerignore
+
+# Common editor and system files
+.vscode/
+.idea/
+*~
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log

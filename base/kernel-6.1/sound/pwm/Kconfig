@@ -9,9 +9,15 @@ menuconfig SND_PWM
 if SND_PWM
 
 config SOFTPWM_SOUND
-	bool "RK3506 MCU Soft PWM Sound driver"
+	bool "PicoCalc Soft PWM Sound driver"
 	select SND_PCM
 	help
 	  Support for sound devices connected via the MCU Soft PWM.
+
+config HW_PWM_SOUND
+	bool "PicoCalc Hardware PWM Sound driver"
+	select SND_PCM
+	help
+	  Support for sound devices connected via hardware PWM. On PicoCalc this requires modifying pins!
 
 endif	# SND_PWM
