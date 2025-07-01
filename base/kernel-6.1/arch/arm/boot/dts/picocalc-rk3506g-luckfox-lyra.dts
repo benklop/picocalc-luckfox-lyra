@@ -72,9 +72,10 @@
 
 	picocalc_snd: picocalc-snd-pwm {
 		compatible = "fsl,picocalc-snd-pwm";
-		pwms = <&pwm0_4ch_0 1 25000 0>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&rm_io12_pwm0_ch1>;
+		pwms = <&pwm0_4ch_0 1 25000 0>, <&pwm0_4ch_0 2 25000 0>;
+        pwm-names = "pwm-snd-left", "pwm-snd-right";
+        pinctrl-names = "default";
+        pinctrl-0 = <&rm_io12_pwm0_ch1 &rm_io13_pwm0_ch2>;
 		status = "okay";
 	};
 
@@ -276,7 +277,7 @@
 /**********pwm**********/
 &pwm0_4ch_0 {
 	pinctrl-names = "active";
-	pinctrl-0 = <&rm_io21_pwm0_ch0 &rm_io12_pwm0_ch1>;
+	pinctrl-0 = <&rm_io21_pwm0_ch0 &rm_io12_pwm0_ch1 &rm_io13_pwm0_ch2>;
 	assigned-clocks = <&cru CLK_PWM0>;
 	assigned-clock-rates = <100000000>;
 	status = "okay";
@@ -315,12 +316,6 @@
 			rockchip,pins = 
 				<0 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>,
 				<0 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-
-	pwm {
-		rm_io12_pwm0_ch1: rm-io12-pwm0-ch1 {
-			rockchip,pins = <0 RK_PB4 1 &pcfg_pull_none>;
 		};
 	};
 };

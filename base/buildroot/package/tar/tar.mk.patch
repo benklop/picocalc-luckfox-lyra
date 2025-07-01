@@ -1,0 +1,22 @@
+--- a/buildroot/package/tar/tar.mk
++++ b/buildroot/package/tar/tar.mk
+@@ -38,6 +38,19 @@ TAR_CONF_OPTS += --without-xattrs
+ endif
+ 
+ $(eval $(autotools-package))
++
++# Install wrapper script for host-tar to default to --no-same-owner when root
++define HOST_TAR_INSTALL_WRAPPER
++	# Move original tar binary
++	mv $(HOST_DIR)/bin/tar $(HOST_DIR)/bin/tar.orig
++	# Install wrapper script
++	$(INSTALL) -D -m 755 $(TAR_PKGDIR)/tar-wrapper.sh $(HOST_DIR)/bin/tar
++endef
++HOST_TAR_POST_INSTALL_HOOKS += HOST_TAR_INSTALL_WRAPPER
++
++# For target tar, we don't need the wrapper since it's not running as root typically
++# and we want normal tar behavior for end users
++
+ 
+ # host-tar: use cpio.gz instead of tar.gz to prevent chicken-egg problem
+ # of needing tar to build tar.

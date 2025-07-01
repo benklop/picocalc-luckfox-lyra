@@ -44,19 +44,15 @@ RUN gdown --fuzzy $SDK_URL -O /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
 
 RUN tar -xzf /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz -C /opt/Lyra-SDK && rm /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
 
-# Copy the build script and make it executable (do this as root before switching users)
+# Copy the entrypoint script
 COPY ./docker/entrypoint.sh /opt/Lyra-SDK/entrypoint.sh
 
-# Create and use a build user
-RUN useradd -m build
-RUN chown -R build:build /opt/Lyra-SDK
+# Create directories for the build process
+# Don't set specific ownership since we'll run as the host user
+RUN mkdir -p /opt/Lyra-SDK/output && \
+    chmod 755 /opt/Lyra-SDK/entrypoint.sh
 
-# Set up ccache for faster builds
-RUN mkdir -p /home/build/.ccache
-RUN chown -R build:build /home/build/.ccache
-RUN chmod 755 /home/build/.ccache
-
-USER build
+# Don't specify a USER - we'll use --user at runtime
 
 # Copy and unpack the Luckfox Lyra SDK
 WORKDIR /opt/Lyra-SDK

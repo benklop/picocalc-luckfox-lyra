@@ -1,0 +1,10 @@
+--- a/buildroot/package/Config.in
++++ b/buildroot/package/Config.in
+@@ -627,6 +627,7 @@
+ 	source "package/rs485conf/Config.in"
+ 	source "package/rtc-tools/Config.in"
+ 	source "package/rtl8188eu/Config.in"
++	source "package/rtl8188fu/Config.in"
+ 	source "package/rtl8189es/Config.in"
+ 	source "package/rtl8189fs/Config.in"
+ 	source "package/rtl8192eu/Config.in"

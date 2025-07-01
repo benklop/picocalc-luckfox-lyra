@@ -12,6 +12,10 @@ CONTAINER_NAME="picocalc-lyra-build-$(date +%s)"
 
 # Pass any arguments to the container entrypoint
 docker run -it --name "$CONTAINER_NAME" \
-    -v "$(pwd)/.ccache:/home/build/.ccache:Z" \
-    -v "$(pwd)/output:/opt/Lyra-SDK/output:Z" \
+    --user "$(id -u):$(id -g)" \
+    -v "$(pwd)/.ccache:/tmp/.ccache:Z" \
+    -v "$(pwd)/output:/tmp/output:Z" \
+    -v "$(pwd)/config:/tmp/config:Z" \
+    -e CCACHE_DIR=/tmp/.ccache \
+    -w /opt/Lyra-SDK \
     picocalc-lyra-builder "$@"
