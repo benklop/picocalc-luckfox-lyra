@@ -70,7 +70,13 @@
 		};
 	};
 
-'?'
+	picocalc_snd: picocalc-snd-pwm {
+		compatible = "fsl,picocalc-snd-pwm";
+		pwms = <&pwm0_4ch_0 1 25000 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rm_io12_pwm0_ch1>;
+		status = "okay";
+	};
 
 	vcc_sys: vcc-sys {
 		compatible = "regulator-fixed";
@@ -166,7 +172,6 @@
 		no-map;
 	};
 
-	/* 0x00~0x20 for PWM */
 	/* 0x20~0x8000 for log*/
 	shmem_reserved: shmem@3c00000 {
 		reg = <0x03c00000 0x8000>;
@@ -271,7 +276,9 @@
 /**********pwm**********/
 &pwm0_4ch_0 {
 	pinctrl-names = "active";
-	pinctrl-0 = <&rm_io21_pwm0_ch0>;
+	pinctrl-0 = <&rm_io21_pwm0_ch0 &rm_io12_pwm0_ch1>;
+	assigned-clocks = <&cru CLK_PWM0>;
+	assigned-clock-rates = <100000000>;
 	status = "okay";
 };
 
@@ -308,6 +315,12 @@
 			rockchip,pins = 
 				<0 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>,
 				<0 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	pwm {
+		rm_io12_pwm0_ch1: rm-io12-pwm0-ch1 {
+			rockchip,pins = <0 RK_PB4 1 &pcfg_pull_none>;
 		};
 	};
 };

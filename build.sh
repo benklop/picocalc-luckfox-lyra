@@ -4,16 +4,6 @@
 # This script builds a Docker image that can compile a custom BuildRoot Linux image
 # for the LuckFox Lyra, tailored to run on the ClockworkPi PicoCalc.
 
-# Create output directory for build artifacts
-mkdir -p "$(pwd)/output"
-mkdir -p "$(pwd)/.ccache"
-chmod o+rwx "$(pwd)/output"
-chmod o+rwx "$(pwd)/.ccache"
-
-# Build the Docker image
-echo "Building Docker image..."
-docker build -t picocalc-lyra-builder .
-
 # Run the Docker container 
 echo "Running build container..."
 
