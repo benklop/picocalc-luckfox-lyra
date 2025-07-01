@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b0ba0c2d1..7fe8d2a41 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -37,6 +37,8 @@ else()
+     set(CXX_VERSION 14)
+ endif()
+ 
++set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
++
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+ 
+ include(Compilers)
