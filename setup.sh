@@ -3,6 +3,7 @@
 # Create output directory for build artifacts
 mkdir -p "$(pwd)/output"
 mkdir -p "$(pwd)/.ccache"
+mkdir -p "$(pwd)/buildroot-output"
 
 # Build the Docker image
 echo "Building Docker image..."

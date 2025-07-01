@@ -16,6 +16,7 @@ docker run -it --name "$CONTAINER_NAME" \
     -v "$(pwd)/.ccache:/tmp/.ccache:Z" \
     -v "$(pwd)/output:/tmp/output:Z" \
     -v "$(pwd)/config:/tmp/config:Z" \
+    -v "$(pwd)/buildroot-output:/tmp/buildroot-output:Z" \
     -e CCACHE_DIR=/tmp/.ccache \
     -w /opt/Lyra-SDK \
     picocalc-lyra-builder "$@"

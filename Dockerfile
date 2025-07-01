@@ -67,10 +67,25 @@ RUN cd customizations \
     && ./prepare.sh \
     && cd ..
 
-RUN rm -f .repo rtos
+RUN rm -rf .repo rtos
 
 # Create a minimal runtime image
 FROM ubuntu:22.04 as runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+# Configure ccache
+ENV CCACHE_DIR=/home/build/.ccache
+ENV CCACHE_MAXSIZE=2G
+ENV CCACHE_SLOPPINESS=pch_defines,time_macros
+ENV CCACHE_COMPRESS=true
+ENV CCACHE_COMPRESSLEVEL=6
+ENV CCACHE_MAXFILES=1000000
+ENV PATH="/usr/lib/ccache:$PATH"
+
+# Set conservative parallel build options to avoid resource exhaustion
+# Use half of available cores to leave plenty of headroom for nested builds
+ENV MAKEFLAGS="-j$(($(nproc) / 2))"
+ENV NINJA_STATUS="[%f/%t] "
 
 # Install only required runtime dependencies (customize as needed)
 RUN apt-get update && apt-get install -y git ssh make gcc libssl-dev \

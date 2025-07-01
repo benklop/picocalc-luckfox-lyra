@@ -12,6 +12,11 @@ if [ -d "/tmp/config" ]; then
     ln -sf /tmp/config /opt/Lyra-SDK/buildroot/configs
 fi
 
+if [ -d "/tmp/buildroot-output" ]; then
+    rm -rf /opt/Lyra-SDK/buildroot/output
+    ln -sf /tmp/buildroot-output /opt/Lyra-SDK/buildroot/output
+fi
+
 # If arguments are provided, pass them to the SDK build script
 if [ $# -gt 0 ]; then
     echo "Running SDK build.sh with arguments: $@"

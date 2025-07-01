@@ -1,6 +1,9 @@
 # Build output directory - contains large binary files
 output/
 
+# Buildroot output directory - contains build artifacts and intermediate files
+buildroot-output/
+
 # SDK tarball - large file that should be downloaded separately
 Luckfox_Lyra_SDK_*.tar.gz
 Lyra-SDK/
