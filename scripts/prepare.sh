@@ -54,6 +54,9 @@ apply_patches() {
             fi
         else
             echo "Warning: Target file $target_path does not exist for patch $patch_file"
+            # Copy the patch file to the corresponding location in the destination directory
+            mkdir -p "$(dirname "$target_path")"
+            cp "$patch_file" "$target_path.patch"
         fi
     done
 }
