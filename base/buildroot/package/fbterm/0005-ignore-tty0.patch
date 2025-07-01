@@ -1,0 +1,13 @@
+--- fbterm-1.7.0/src/fbshell.cpp	2025-04-11 16:45:16.746737378 +0800
++++ fbterm-1.7.0/src/fbshell.cpp	2025-04-11 16:46:26.934461625 +0800
+@@ -552,7 +552,9 @@
+ 
+ void FbShell::switchVt(bool enter, FbShell *peer)
+ {
+-	if (tty0_fd == -1) tty0_fd = open("/dev/tty0", O_RDWR);
++/* fix rk3506 debug serial */
++/*	if (tty0_fd == -1) tty0_fd = open("/dev/tty0", O_RDWR); */
++        tty0_fd = -1;
+ 	if (tty0_fd != -1) {
+ 		seteuid(0);
+ 		ioctl(tty0_fd, TIOCCONS, 0);

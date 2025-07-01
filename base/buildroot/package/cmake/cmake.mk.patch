@@ -1,0 +1,21 @@
+--- a/buildroot/package/cmake/cmake.mk
++++ b/buildroot/package/cmake/cmake.mk
+@@ -34,7 +34,8 @@
+ 	-DCMAKE_USE_SYSTEM_LIBRARIES=1 \
+ 	-DCTEST_USE_XMLRPC=OFF \
+ 	-DCMake_ENABLE_DEBUGGER=0 \
+-	-DBUILD_CursesDialog=OFF
++	-DBUILD_CursesDialog=OFF \
++	-DCMAKE_NO_SYSTEM_FROM_IMPORTED=1
+ 
+ # Get rid of -I* options from $(HOST_CPPFLAGS) to prevent that a
+ # header available in $(HOST_DIR)/include is used instead of a
+@@ -82,7 +83,7 @@
+ 		$(TARGET_DIR)/usr/share/cmake-$(CMAKE_VERSION_MAJOR)/Modules/CMake.cmake.ctest
+ endef
+ 
+-CMAKE_POST_INSTALL_TARGET_HOOKS += CMAKE_REMOVE_EXTRA_DATA
++# CMAKE_POST_INSTALL_TARGET_HOOKS += CMAKE_REMOVE_EXTRA_DATA
+ CMAKE_POST_INSTALL_TARGET_HOOKS += CMAKE_INSTALL_CTEST_CFG_FILE
+ 
+ define CMAKE_INSTALL_TARGET_CMDS

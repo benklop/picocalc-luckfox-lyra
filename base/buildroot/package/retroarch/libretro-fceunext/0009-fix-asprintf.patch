@@ -1,0 +1,11 @@
+--- libretro-fceunext-ebd46a592c23a8091abd72e74cf0d9f4517769e1/fceumm-code/src/general.c	2016-03-17 17:30:19.000000000 +0800
++++ libretro-fceunext-ebd46a592c23a8091abd72e74cf0d9f4517769e1/fceumm-code/src/general.c	2025-04-13 20:14:31.675065766 +0800
+@@ -67,7 +67,7 @@
+ }
+ 
+ #ifndef HAVE_ASPRINTF
+-static int asprintf(char **strp, const char *fmt, ...) {
++static int asprintf__(char **strp, const char *fmt, ...) {
+ 	va_list ap;
+ 	int ret;
+ 

@@ -1,0 +1,18 @@
+--- fcitx-fbterm-0.2.0/CMakeLists.txt	2025-04-16 15:02:23.993417529 +0800
++++ fcitx-fbterm-0.2.0/CMakeLists.txt	2025-04-16 15:14:51.831349230 +0800
+@@ -2,11 +2,13 @@
+ 
+ project(fcitx-fbterm)
+ 
++option(stagingdir "staging dir  when cross compiling" "")
++
+ find_package(PkgConfig REQUIRED)
+ find_package(Gettext REQUIRED)
+-find_package(Fcitx 4.2.6 REQUIRED)
++find_package(Fcitx REQUIRED)
+ 
+-pkg_check_modules(FCITX_GCLIENT "fcitx-gclient>=4.2.6" REQUIRED)
++pkg_check_modules(FCITX_GCLIENT "fcitx-gclient" REQUIRED)
+ 
+ # uninstall target
+ configure_file(

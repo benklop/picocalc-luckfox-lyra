@@ -1,0 +1,10 @@
+--- gcc-target-12.4.0/zlib/gzguts.h	2025-04-13 01:00:02.907456827 +0800
++++ gcc-target-12.4.0/zlib/gzguts.h	2025-04-13 01:00:51.308093829 +0800
+@@ -9,6 +9,7 @@
+ #  endif
+ #  ifdef _FILE_OFFSET_BITS
+ #    undef _FILE_OFFSET_BITS
++#    undef _TIME_BITS
+ #  endif
+ #endif
+ 

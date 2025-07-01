@@ -1,0 +1,7 @@
+config BR2_PACKAGE_FCITX_FBTERM
+	bool "fcitx-fbterm"
+	depends on BR2_PACKAGE_FCITX
+	help
+          Fbterm support for fcitx
+
+	  https://github.com/fcitx/fcitx-fbterm

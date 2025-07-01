@@ -1,0 +1,6 @@
+config BR2_PACKAGE_EXTRA_CMAKE_MODULES
+	bool "extra-cmake-modules"
+	help
+	  This package corresponds to the extra CMake modules,
+
+	  https://api.kde.org/frameworks/extra-cmake-modules/html/index.html

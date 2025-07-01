@@ -1,0 +1,31 @@
+From b50ff2298c50a8b94a3fd21765f941d271896307 Mon Sep 17 00:00:00 2001
+From: David Barbion <davidb@230ruedubac.fr>
+Date: Sat, 3 Aug 2024 00:47:59 +0200
+Subject: [PATCH] sdl2-sound compat
+
+---
+ configure.ac | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 3f121a0..26adc95 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -616,11 +616,11 @@ fi
+ 
+ AH_TEMPLATE(C_SDL_SOUND,[Define to 1 to enable SDL_sound support])
+ AC_CHECK_HEADER(SDL_sound.h,have_SDL_sound_h=yes,)
+-AC_CHECK_LIB(SDL_sound, Sound_Init, have_SDL_sound_init=yes,,)
+-AC_CHECK_LIB(SDL_sound, Sound_Seek, have_SDL_sound_seek=yes,,)
++AC_CHECK_LIB(SDL2_sound, Sound_Init, have_SDL_sound_init=yes,,)
++AC_CHECK_LIB(SDL2_sound, Sound_Seek, have_SDL_sound_seek=yes,,)
+ if test x$have_SDL_sound_h = xyes -a x$have_SDL_sound_init = xyes ; then
+   if test x$have_SDL_sound_seek = xyes ; then
+-    LIBS="-lSDL_sound $LIBS"
++    LIBS="-lSDL2_sound $LIBS"
+     AC_DEFINE(C_SDL_SOUND,1)
+    else 
+      AC_MSG_WARN([Can't find SoundSeek in libSDL_Sound, libSDL_sound support disabled])
+-- 
+2.46.0
+

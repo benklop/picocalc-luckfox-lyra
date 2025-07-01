@@ -1,0 +1,25 @@
+--- ./configure.ac.orig	2023-03-08 20:56:28.565850462 +0100
++++ ./configure.ac	2023-03-08 20:56:07.596120696 +0100
+@@ -32,18 +32,18 @@
+ CPPFLAGS="$CPPFLAGS $SDL_CFLAGS"
+ 
+ dnl Check if SDL is 1.2.x, 2.0.x
+-AC_MSG_CHECKING([for SDL version being 1.2.x or 2.0.x])
++AC_MSG_CHECKING([for SDL version being 1.2.x, 2.0.x or 2.26.x])
+ AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+ #include "SDL.h"
+ void blah(){
+-#if !((SDL_MAJOR_VERSION == 1) && (SDL_MINOR_VERSION == 2)) && !((SDL_MAJOR_VERSION == 2) && (SDL_MINOR_VERSION == 0))
+-#error "Only SDL 1.2 and 2.0 supported"
++#if !((SDL_MAJOR_VERSION == 1) && (SDL_MINOR_VERSION == 2)) && !((SDL_MAJOR_VERSION == 2) && (SDL_MINOR_VERSION == 0 || SDL_MINOR_VERSION >= 6))
++#error "Only SDL 1.2, 2.0 and 2.26 supported"
+ #endif
+ ;
+ }
+ ])],AC_MSG_RESULT([yes]),[
+  AC_MSG_RESULT([no]) 
+- AC_MSG_ERROR([Only libSDL 1.2.x or 2.0.x supported])])
++ AC_MSG_ERROR([Only libSDL 1.2.x, 2.0.x or 2.26.x supported])])
+ 
+ dnl Check for SDL_cdrom compatibility layer platform (used with SDL 2.0 only)
+ AC_MSG_CHECKING(for SDL_cdrom compatibility layer platform)

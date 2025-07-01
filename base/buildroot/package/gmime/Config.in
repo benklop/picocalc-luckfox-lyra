@@ -1,0 +1,4 @@
+config BR2_PACKAGE_GMIME
+	bool "gmime"
+	help
+	  MIME type helper

@@ -1,0 +1,7 @@
+config BR2_PACKAGE_PYTHON_SYMPY
+	bool "python-sympy"
+        select BR2_PACKAGE_PYTHON_MPMATH
+	help
+          A computer algebra system written in pure Python 
+
+          https://sympy.org/

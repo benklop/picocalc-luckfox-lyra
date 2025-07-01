@@ -1,0 +1,24 @@
+--- a/buildroot/package/gcc/gcc-target/gcc-target.mk
++++ b/buildroot/package/gcc/gcc-target/gcc-target.mk
+@@ -33,7 +33,7 @@
+ 	--disable-lto
+ # Finally, we add some of our own flags
+ GCC_TARGET_CONF_OPTS += \
+-	--enable-languages=c \
++	--enable-languages=c,c++,fortran\
+ 	--disable-boostrap \
+ 	--disable-libgomp \
+ 	--disable-nls \
+@@ -69,9 +69,11 @@
+ # already in `/lib`)
+ define GCC_TARGET_RM_FILES
+ 	rm -f $(TARGET_DIR)/usr/bin/$(ARCH)-buildroot-linux-gnu-gcc*
+-	rm -f $(TARGET_DIR)/usr/lib/libgcc_s*.so*
++#	rm -f $(TARGET_DIR)/usr/lib/libgcc_s*.so*
+ 	rm -f $(TARGET_DIR)/usr/$(ARCH)-buildroot-linux-gnu/lib/ldscripts/elf32*
+ 	rm -f $(TARGET_DIR)/usr/$(ARCH)-buildroot-linux-gnu/lib/ldscripts/elf64b*
++        cp -af $(STAGING_DIR)/usr/lib/*_nonshared.a  $(TARGET_DIR)/usr/lib/
++        cp -af $(STAGING_DIR)/usr/lib/*crt*.o  $(TARGET_DIR)/usr/lib/
+ endef
+ GCC_TARGET_POST_INSTALL_TARGET_HOOKS += GCC_TARGET_RM_FILES
+ 

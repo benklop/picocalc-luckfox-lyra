@@ -1,0 +1,10 @@
+--- retroarch-08dd2a8f7bdd3881b2139f265670910b3520ac9d/deps/libz/gzguts.h	2025-04-13 20:24:01.553906736 +0800
++++ retroarch-08dd2a8f7bdd3881b2139f265670910b3520ac9d/deps/libz/gzguts.h	2025-04-13 20:24:30.000884619 +0800
+@@ -12,6 +12,7 @@
+ #  endif
+ #  ifdef _FILE_OFFSET_BITS
+ #    undef _FILE_OFFSET_BITS
++#    undef _TIME_BITS
+ #  endif
+ #endif
+ 

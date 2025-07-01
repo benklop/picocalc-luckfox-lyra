@@ -1,0 +1,22 @@
+--- a/configure.ac	2025-04-11 16:14:23.140256310 +0800
++++ b/configure.ac	2025-04-11 16:16:53.482655208 +0800
+@@ -93,7 +93,8 @@
+        if test x$SETFONT != x -o x$SETFONT != x'"$SETFONT"'; then
+ 
+ 	  dnl Now look for the console fonts directory
+-	  AC_CHECK_FILES([/usr/lib/kbd/consolefonts /usr/share/consolefonts])
++	  ac_cv_file__usr_lib_kbd_consolefonts='no'
++          ac_cv_file__usr_share_consolefonts='yes'
+ 
+ 	  if test "x$ac_cv_file__usr_lib_kbd_consolefonts" = "xno"; then
+ 	      if test "x$ac_cv_file__usr_share_consolefonts" = "xno"; then
+@@ -112,7 +113,8 @@
+   fi
+ 
+   AC_PATH_PROG(MKFONTDIR, mkfontdir, "", $PATH:/usr/bin:/usr/bin/X11:/usr/local/bin/X11:/usr/X11R6/bin:/usr/local/bin:/sbin:/usr/sbin)
+-  AC_CHECK_FILES([/usr/lib/X11/fonts/misc /usr/X11R6/lib/X11/fonts/misc])
++  ac_cv_file__usr_lib_X11_fonts_misc='no'
++  ac_cv_file__usr_X11R6_lib_X11_fonts_misc='no'
+ 
+   if test "x$ac_cv_file__usr_lib_X11_fonts_misc" = "xno"; then
+       if test "x$ac_cv_file__usr_X11R6_lib_X11_fonts_misc" = "xno"; then

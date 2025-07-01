@@ -1,0 +1,11 @@
+--- a/buildroot/package/retroarch/retroarch/retroarch.mk
++++ b/buildroot/package/retroarch/retroarch/retroarch.mk
+@@ -105,7 +105,7 @@
+ 	(cd $(@D); rm -rf config.cache; \
+ 		$(TARGET_CONFIGURE_ARGS) \
+ 		$(TARGET_CONFIGURE_OPTS) \
+-		CFLAGS="$(TARGET_CFLAGS)" \
++		CFLAGS="$(TARGET_CFLAGS) -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64" \
+ 		LDFLAGS="$(TARGET_LDFLAGS)" \
+ 		CROSS_COMPILE=$(TARGET_CROSS) \
+ 		PKG_CONF_PATH="$(PKG_CONFIG_HOST_BINARY)" \

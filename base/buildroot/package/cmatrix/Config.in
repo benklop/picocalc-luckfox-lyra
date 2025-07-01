@@ -1,0 +1,7 @@
+config BR2_PACKAGE_CMATRIX
+	bool "cmatrix"
+        select BR2_PACKAGE_NCURSES
+	help
+          Matrix like effect in your terminal 
+
+          https://github.com/abishekvashok/cmatrix

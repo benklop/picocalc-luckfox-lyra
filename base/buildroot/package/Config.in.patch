@@ -1,5 +1,13 @@
 --- a/buildroot/package/Config.in
 +++ b/buildroot/package/Config.in
+@@ -191,6 +191,7 @@
+ 	source "package/findutils/Config.in"
+ 	source "package/flex/Config.in"
+ 	source "package/gawk/Config.in"
++	source "package/gcc/Config.in"
+ 	source "package/gettext/Config.in"
+ 	source "package/gettext-gnu/Config.in"
+ 	source "package/gettext-tiny/Config.in"
 @@ -627,6 +627,7 @@
  	source "package/rs485conf/Config.in"
  	source "package/rtc-tools/Config.in"
@@ -8,3 +16,40 @@
  	source "package/rtl8189es/Config.in"
  	source "package/rtl8189fs/Config.in"
  	source "package/rtl8192eu/Config.in"
+@@ -1221,6 +1222,7 @@
+ 	source "package/python-ml-dtypes/Config.in"
+ 	source "package/python-modbus-tk/Config.in"
+ 	source "package/python-more-itertools/Config.in"
++	source "package/python-mpmath/Config.in"
+ 	source "package/python-mpd2/Config.in"
+ 	source "package/python-msgfy/Config.in"
+ 	source "package/python-msgpack/Config.in"
+@@ -1396,6 +1398,7 @@
+ 	source "package/python-stack-data/Config.in"
+ 	source "package/python-starlette/Config.in"
+ 	source "package/python-systemd/Config.in"
++	source "package/python-sympy/Config.in"
+ 	source "package/python-tabledata/Config.in"
+ 	source "package/python-tcolorpy/Config.in"
+ 	source "package/python-tempora/Config.in"
+@@ -2891,4 +2894,20 @@
+ 	source "package/vim/Config.in"
+ endmenu
+ 
++menu "PicoCalc"
++        source "package/libgc/Config.in"
++        source "package/w3m/Config.in"
++        source "package/libxapian/Config.in"
++        source "package/gmime/Config.in"
++        source "package/notmuch/Config.in"
++        source "package/dante-preload/Config.in"
++        source "package/aerc/Config.in"
++        source "package/cmatrix/Config.in"
++        source "package/sdl2_sound/Config.in"
++        source "package/dosbox/Config.in"
++        source "package/fcitx/Config.in"
++        source "package/fcitx-fbterm/Config.in"
++        source "package/extra-cmake-modules/Config.in"
++endmenu
++
+ endmenu

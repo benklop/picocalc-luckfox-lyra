@@ -1,0 +1,69 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 035c949..899df27 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -45,6 +45,7 @@ option(ENABLE_BACKTRACE "Enable backtrace support" On)
+ option(ENABLE_XDGAUTOSTART "Enable xdg autostart desktop file installation" On)
+ option(ENABLE_GETTEXT "Enable gettext support." On)
+ option(ENABLE_SPELL "Enable Spell Addon" On)
++option(HOST_DIR "host dir path when cross compiling" "")
+ 
+ if(NOT NO_SNOOPER_APPS)
+   set(NO_SNOOPER_APPS ".*chrome.*,.*chromium.*,firefox.*,Do.*"
+diff --git a/cmake/FcitxConfig.cmake b/cmake/FcitxConfig.cmake
+index 0b496ea..2cf5fc1 100644
+--- a/cmake/FcitxConfig.cmake
++++ b/cmake/FcitxConfig.cmake
+@@ -89,4 +89,4 @@ ENDIF(FCITX4_FCITXCONFIG_EXECUTABLE)
+ INCLUDE(FindPackageHandleStandardArgs)
+ FIND_PACKAGE_HANDLE_STANDARD_ARGS(Fcitx DEFAULT_MSG FCITX4_VERSION)
+ 
+-INCLUDE(${FCITX4_PREFIX}/share/cmake/fcitx/FcitxMacro.cmake)
++INCLUDE(${stagingdir}${FCITX4_PREFIX}/share/cmake/fcitx/FcitxMacro.cmake)
+diff --git a/cmake/FcitxMacro.cmake b/cmake/FcitxMacro.cmake
+index e02c27a..c43dd8c 100644
+--- a/cmake/FcitxMacro.cmake
++++ b/cmake/FcitxMacro.cmake
+@@ -174,11 +174,17 @@ function(__fcitx_cmake_init)
+   set_property(GLOBAL PROPERTY "__FCITX_CMAKE_CACHE_BASE"
+     "${fcitx_cmake_cache_base}")
+   if(FCITX_INTERNAL_BUILD)
++#    set(FCITX_SCANNER_EXECUTABLE
++#      "${PROJECT_BINARY_DIR}/tools/dev/fcitx-scanner"
++#      CACHE INTERNAL "fcitx-scanner" FORCE)
+     set(FCITX_SCANNER_EXECUTABLE
+-      "${PROJECT_BINARY_DIR}/tools/dev/fcitx-scanner"
++      "$(HOST_DIR)/lib/fcitx/libexec/fcitx-scanner"
+       CACHE INTERNAL "fcitx-scanner" FORCE)
++#    set(FCITX_PO_PARSER_EXECUTABLE
++#      "${PROJECT_BINARY_DIR}/tools/dev/fcitx-po-parser"
++#      CACHE INTERNAL "fcitx-po-parser" FORCE)
+     set(FCITX_PO_PARSER_EXECUTABLE
+-      "${PROJECT_BINARY_DIR}/tools/dev/fcitx-po-parser"
++      "$(HOST_DIR)/lib/fcitx/libexec/fcitx-po-parser"
+       CACHE INTERNAL "fcitx-po-parser" FORCE)
+     set(FCITX4_FCITX_INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/include"
+       CACHE INTERNAL "include dir" FORCE)
+diff --git a/src/im/pinyin/data/CMakeLists.txt b/src/im/pinyin/data/CMakeLists.txt
+index 5b8ac60..1528d65 100644
+--- a/src/im/pinyin/data/CMakeLists.txt
++++ b/src/im/pinyin/data/CMakeLists.txt
+@@ -15,7 +15,7 @@ fcitx_download(py-data-download "${PY_URL}" "${PY_TAR}"
+   MD5SUM 34dcb1b5209c28baa4e87f6a2773bfd0)
+ fcitx_extract(py-data-extract "${PY_TAR}" DEPENDS py-data-download
+   OUTPUT ${PY_ORGDATA})
+-set(CREATE_PYMB_BIN "${PROJECT_BINARY_DIR}/tools/cli/createPYMB")
++set(CREATE_PYMB_BIN "$(HOST_DIR)/bin/createPYMB")
+ add_custom_command(OUTPUT ${PY_DATA}
+   DEPENDS ${PY_ORGDATA} "${CREATE_PYMB_BIN}" py-data-extract
+   COMMAND "${CREATE_PYMB_BIN}" "${CMAKE_CURRENT_SOURCE_DIR}/gbkpy.org"
+diff --git a/src/im/table/data/CMakeLists.txt b/src/im/table/data/CMakeLists.txt
+index 8dc9b38..00a100f 100644
+--- a/src/im/table/data/CMakeLists.txt
++++ b/src/im/table/data/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-set(TXT2MB_BIN "${PROJECT_BINARY_DIR}/tools/cli/txt2mb")
++set(TXT2MB_BIN "$(HOST_DIR)/bin/txt2mb")
+ 
+ set(TABLE_DATA
+   "${CMAKE_CURRENT_BINARY_DIR}/db.mb"

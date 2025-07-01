@@ -1,0 +1,10 @@
+--- a/buildroot/package/retroarch/libretro-fceunext/libretro-fceunext.mk
++++ b/buildroot/package/retroarch/libretro-fceunext/libretro-fceunext.mk
+@@ -20,4 +20,7 @@
+ 		$(TARGET_DIR)/usr/lib/libretro/fceunext_libretro.so
+ endef
+ 
++CFLAGS += -DHAVE_ASPRINTF
++CXXFLAGS += -DHAVE_ASPRINTF
++
+ $(eval $(generic-package))

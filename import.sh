@@ -8,22 +8,28 @@ set -e
 # Usage: ./import.sh [--dryrun]
 #   --dryrun    Show what would be done without making changes
 
-EXTERNAL_PACKAGES="../picocalc_luckfox_lyra/buildroot/packages"
+EXTERNAL_PACKAGES="../picocalc_luckfox_lyra/buildroot/package"
 SDK_PACKAGES="SDK/Lyra-SDK/buildroot/package"
 BASE_PACKAGES="base/buildroot/package"
 REPORT_FILE="import_report.txt"
 
 # Parse command line arguments
 DRYRUN=false
+DEBUG=false
 for arg in "$@"; do
     case $arg in
         --dryrun|--dry-run|-n)
             DRYRUN=true
             shift
             ;;
+        --debug|-d)
+            DEBUG=true
+            shift
+            ;;
         --help|-h)
-            echo "Usage: $0 [--dryrun]"
+            echo "Usage: $0 [--dryrun] [--debug]"
             echo "  --dryrun    Show what would be done without making changes"
+            echo "  --debug     Show additional debug information"
             exit 0
             ;;
         *)
@@ -48,14 +54,32 @@ if [ "$DRYRUN" = false ]; then
     echo "" >> "$REPORT_FILE"
 fi
 
-# Counters
+# Counters - use files to persist across subshells if needed
 COPIED_NEW=0
 CREATED_PATCHES=0
 CONFLICTS=0
 SKIPPED=0
 
+# Helper functions for counters
+increment_counter() {
+    local counter_name="$1"
+    case "$counter_name" in
+        "COPIED_NEW") COPIED_NEW=$((COPIED_NEW + 1)) ;;
+        "CREATED_PATCHES") CREATED_PATCHES=$((CREATED_PATCHES + 1)) ;;
+        "CONFLICTS") CONFLICTS=$((CONFLICTS + 1)) ;;
+        "SKIPPED") SKIPPED=$((SKIPPED + 1)) ;;
+    esac
+    return 0  # Always return success
+}
+
 log() {
     echo -e "$1"
+}
+
+debug() {
+    if [ "$DEBUG" = true ]; then
+        echo -e "${BLUE}[DEBUG]${NC} $1" >&2
+    fi
 }
 
 log_report() {
@@ -85,8 +109,11 @@ create_patch() {
     
     if [ "$DRYRUN" = true ]; then
         # In dry run mode, just check if patch would be successful
-        diff -u "$original" "$modified" >/dev/null 2>&1
-        return $?
+        if diff -u "$original" "$modified" >/dev/null 2>&1; then
+            return 1  # Files are identical, no patch needed
+        else
+            return 0  # Files differ, patch would be created
+        fi
     fi
     
     local patch_dir=$(dirname "$patch_file")
@@ -129,7 +156,7 @@ process_file() {
             cp "$external_file" "$base_file"
         fi
         log_report "COPIED (New): $rel_path"
-        ((COPIED_NEW++))
+        increment_counter "COPIED_NEW"
         return
     fi
     
@@ -141,7 +168,7 @@ process_file() {
             log "  ${YELLOW}→ Identical to SDK, skipping${NC}"
         fi
         log_report "SKIPPED (Identical): $rel_path"
-        ((SKIPPED++))
+        increment_counter "SKIPPED"
         return
     fi
     
@@ -163,7 +190,7 @@ process_file() {
                 return
             fi
         fi
-        ((CREATED_PATCHES++))
+        increment_counter "CREATED_PATCHES"
         return
     fi
     
@@ -175,7 +202,7 @@ process_file() {
             log "  ${YELLOW}→ Identical to existing base file, skipping${NC}"
         fi
         log_report "SKIPPED (Base identical): $rel_path"
-        ((SKIPPED++))
+        increment_counter "SKIPPED"
     else
         log "  ${RED}→ CONFLICT: File differs from both SDK and existing base version${NC}"
         log_report "CONFLICT: $rel_path"
@@ -184,7 +211,7 @@ process_file() {
         log_report "  - Base:     $base_file"
         log_report "  Manual resolution required."
         log_report ""
-        ((CONFLICTS++))
+        increment_counter "CONFLICTS"
     fi
 }
 
@@ -197,10 +224,11 @@ process_directory() {
         return
     fi
     
-    find "$base_path/$dir" -type f \( -name "*.mk" -o -name "Config.in" -o -name "*.patch" -o -name "*.hash" \) | while read file; do
+    # Use process substitution instead of pipeline to avoid subshell issues
+    while IFS= read -r -d '' file; do
         local rel_path="${file#$base_path/}"
         process_file "$rel_path"
-    done
+    done < <(find "$base_path/$dir" -type f \( -name "*.mk" -o -name "Config.in" -o -name "*.patch" -o -name "*.hash" \) -print0)
 }
 
 # Main execution
@@ -237,16 +265,19 @@ log "${BLUE}Scanning for packages...${NC}"
 for package_dir in "$EXTERNAL_PACKAGES"/*; do
     if [ -d "$package_dir" ]; then
         package_name=$(basename "$package_dir")
+        debug "Processing package directory: $package_name"
         log "Found package: $package_name"
         process_directory "$package_name"
+        debug "Finished processing package: $package_name"
     fi
 done
+debug "Finished processing all package directories"
 
 # Also process any standalone files in the root
-find "$EXTERNAL_PACKAGES" -maxdepth 1 -type f \( -name "*.mk" -o -name "Config.in" -o -name "*.patch" \) | while read file; do
-    local rel_path="${file#$EXTERNAL_PACKAGES/}"
+while IFS= read -r -d '' file; do
+    rel_path="${file#$EXTERNAL_PACKAGES/}"
     process_file "$rel_path"
-done
+done < <(find "$EXTERNAL_PACKAGES" -maxdepth 1 -type f \( -name "*.mk" -o -name "Config.in" -o -name "*.patch" \) -print0)
 
 # Summary
 log ""

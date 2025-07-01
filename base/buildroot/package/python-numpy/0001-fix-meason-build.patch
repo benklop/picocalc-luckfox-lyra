@@ -1,0 +1,12 @@
+--- python-numpy-1.25.0/numpy/meson.build	2023-06-17 09:48:37.183072300 +0800
++++ python-numpy-1.25.0/numpy/meson.build	2025-04-13 00:40:54.923125683 +0800
+@@ -200,7 +200,8 @@
+     conf_data.set(name + '_TYPE_NAME', dep.type_name())
+     conf_data.set(name + '_INCLUDEDIR', dep.get_variable('includedir'))
+     conf_data.set(name + '_LIBDIR', dep.get_variable('libdir'))
+-    conf_data.set(name + '_OPENBLAS_CONFIG', dep.get_variable('openblas_config'))
++#    conf_data.set(name + '_OPENBLAS_CONFIG', dep.get_variable('openblas_config'))
++    conf_data.set(name + '_OPENBLAS_CONFIG', 'USE_64BITINT= DYNAMIC_ARCH= DYNAMIC_OLDER= NO_CBLAS= NO_LAPACK= NO_LAPACKE= NO_AFFINITY=1 USE_OPENMP=0 ARMV7 MAX_THREADS=4')
+     conf_data.set(name + '_PCFILEDIR', dep.get_variable('pcfiledir'))
+   endif
+ endforeach

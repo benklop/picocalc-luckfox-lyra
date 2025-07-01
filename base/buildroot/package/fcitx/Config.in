@@ -1,0 +1,8 @@
+config BR2_PACKAGE_FCITX
+	bool "fcitx"
+	depends on BR2_PACKAGE_DBUS
+        select BR2_PACKAGE_HOST_FCITX_TOOLS
+	help
+          A Flexible Input Method Framework
+
+	  https://github.com/fcitx/fcitx

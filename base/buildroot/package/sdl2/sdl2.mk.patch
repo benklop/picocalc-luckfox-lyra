@@ -1,0 +1,14 @@
+--- a/buildroot/package/sdl2/sdl2.mk
++++ b/buildroot/package/sdl2/sdl2.mk
+@@ -134,4 +134,11 @@
+ SDL2_CONF_OPTS += -DSDL_WAYLAND=OFF
+ endif
+ 
++
++define SDL2_FIX_SDL2_CONFIG
++	$(SED) 's|-I/[^ ]*/sysroot/usr/include|-I/usr/include|g' \
++		$(TARGET_DIR)/usr/bin/sdl2-config
++endef
++SDL2_POST_INSTALL_TARGET_HOOKS += SDL2_FIX_SDL2_CONFIG
++
+ $(eval $(cmake-package))
