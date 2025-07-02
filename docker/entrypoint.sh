@@ -56,6 +56,28 @@ apply_package_set() {
     echo "Package set applied successfully"
 }
 
+# Function to resolve symlinks in firmware directory
+resolve_firmware_symlinks() {
+    local firmware_dir="/opt/Lyra-SDK/output/firmware"
+    
+    if [ ! -d "$firmware_dir" ]; then
+        echo "No firmware directory found at $firmware_dir"
+        return 0
+    fi
+    
+    echo "Resolving symlinks in firmware directory..."
+    
+    # Find all symlinks in the firmware directory and resolve them
+    find "$firmware_dir" -type l | while read -r symlink; do
+        local filename=$(basename "$symlink")
+        echo "  Resolving $filename"
+        # Copy the target file, replacing the symlink (cp -L follows symlinks)
+        cp -L "$symlink" "$symlink"
+    done
+    
+    echo "Firmware symlinks resolved"
+}
+
 # Parse command line arguments to extract package set information
 PACKAGE_SET_PATH=""
 FILTERED_ARGS=()
@@ -93,5 +115,12 @@ fi
 if [ ${#FILTERED_ARGS[@]} -gt 0 ]; then
     echo "Running SDK build.sh with arguments: ${FILTERED_ARGS[@]}"
     ./build.sh "${FILTERED_ARGS[@]}"
-    exit $?
+    EXIT_CODE=$?
+    
+    # After build completes, resolve firmware symlinks so they persist outside the container
+    if [ $EXIT_CODE -eq 0 ]; then
+        resolve_firmware_symlinks
+    fi
 fi
+ 
+ exit $EXIT_CODE
