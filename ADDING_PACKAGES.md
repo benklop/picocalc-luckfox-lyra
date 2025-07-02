@@ -265,6 +265,121 @@ $(eval $(generic-package))
 - Verify dependencies are correctly specified
 - Test on clean build environments
 
+## Development and Testing Workflow
+
+### Interactive Development Commands
+
+Use these commands during package development for testing and debugging:
+
+```bash
+# Clean and rebuild specific packages
+./build.sh buildroot-make:your-package-dirclean   # Complete cleanup
+./build.sh buildroot-make:your-package            # Build package
+
+# Interactive development environment
+./build.sh buildroot-shell                        # Open BuildRoot shell
+./build.sh buildroot-config                       # Configure BuildRoot interactively
+./build.sh kernel-config                          # Configure kernel interactively
+```
+
+### Step-by-Step Development Process
+
+1. **Create your package files** as described above
+2. **Add to BuildRoot menu** with Config.in patch
+3. **Test package extraction**:
+   ```bash
+   ./build.sh buildroot-shell
+   make your-package-extract
+   ls build/your-package-*/  # Examine extracted source
+   ```
+4. **Test patch application**:
+   ```bash
+   make your-package-patch
+   # Check if patches applied successfully
+   ```
+5. **Test compilation**:
+   ```bash
+   make your-package-build
+   # Fix any compilation issues
+   ```
+6. **Clean rebuild test**:
+   ```bash
+   exit  # Exit BuildRoot shell
+   ./build.sh buildroot-make:your-package-dirclean
+   ./build.sh buildroot-make:your-package
+   ```
+
+### Debugging Package Issues
+
+#### Examine Build Environment
+```bash
+./build.sh buildroot-shell
+cd build/your-package-*/          # Go to extracted source
+less ../../your-package/.stamp_*  # Check build stamps
+cat config.log                    # Check configuration issues (if autotools)
+```
+
+#### Common BuildRoot Make Targets
+```bash
+# Inside buildroot-shell or via buildroot-make:
+make your-package-extract          # Extract source only
+make your-package-patch            # Apply patches only  
+make your-package-configure        # Configure only
+make your-package-build            # Build only
+make your-package-install          # Install to staging
+make your-package-install-target   # Install to target
+make your-package-dirclean         # Complete cleanup
+make your-package-rebuild          # Clean and rebuild
+```
+
+#### Package Information Commands
+```bash
+make your-package-show-depends     # Show dependencies
+make your-package-show-info        # Show package information  
+make printvars VARS=your-package   # Show package variables
+```
+
+### Testing Patches
+
+When developing patches for existing packages:
+
+1. **Extract the package source**:
+   ```bash
+   ./build.sh buildroot-shell
+   make rtl8188fu-extract  # Example with RTL8188FU
+   cd build/rtl8188fu-*/
+   ```
+
+2. **Make your changes manually** and test compilation
+
+3. **Generate the patch**:
+   ```bash
+   # After making changes, create a patch
+   cd build/rtl8188fu-*
+   git init && git add . && git commit -m "Original"
+   # Make your changes
+   git add . && git commit -m "Fix compilation"
+   git format-patch HEAD~1
+   ```
+
+4. **Test the patch**:
+   ```bash
+   # Copy patch to package directory, then:
+   make rtl8188fu-dirclean
+   make rtl8188fu-patch  # Test patch application
+   make rtl8188fu-build  # Test compilation
+   ```
+
+### Advanced Development Tips
+
+- **Use `V=1`** for verbose output: `make your-package V=1`
+- **Preserve build directory** during development: Don't use `dirclean` until testing is complete
+- **Check file installation**: Use `find host/ staging/ target/ -name "*your-package*"` to verify installation
+- **Monitor build logs**: Build output shows configure and compile commands
+- **Test cross-compilation**: Ensure package builds for target architecture
+
+See [BuildRoot Manual - Package Build Steps](https://buildroot.org/downloads/manual/manual.html#pkg-build-steps) for complete reference.
+
 ## Troubleshooting
 
 ### Patch Application Fails

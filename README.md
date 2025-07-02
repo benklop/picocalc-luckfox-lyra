@@ -111,6 +111,97 @@ To customize the build:
 5. Add additional patches or scripts as needed
 6. Create package sets for reusable modifications
 
+## Development and Debugging
+
+The build system provides several useful commands for development and debugging. All commands are available through `./build.sh`:
+
+### Available Commands
+
+Run `./build.sh --help` to see all available options. Key development commands include:
+
+```bash
+# Standard build commands
+./build.sh all                    # Build complete system
+./build.sh buildroot              # Build only BuildRoot components
+./build.sh kernel                 # Build only kernel
+
+# Development and debugging commands
+./build.sh buildroot-shell        # Open shell in BuildRoot environment
+./build.sh shell                  # Open general development shell
+./build.sh buildroot-config       # Modify BuildRoot configuration interactively
+./build.sh kernel-config          # Modify kernel configuration interactively
+```
+
+### BuildRoot Package Development
+
+For working with individual packages (especially useful when developing patches):
+
+```bash
+# Clean and rebuild a specific package
+./build.sh buildroot-make:<package>-dirclean
+./build.sh buildroot-make:<package>
+
+# Example: Working with the RTL8188FU driver
+./build.sh buildroot-make:rtl8188fu-dirclean  # Clean package completely
+./build.sh buildroot-make:rtl8188fu           # Rebuild package
+```
+
+### Interactive Development Shell
+
+The `buildroot-shell` command is particularly useful for development:
+
+```bash
+./build.sh buildroot-shell
+```
+
+This opens an interactive shell inside the BuildRoot environment where you can:
+
+- **Examine the build environment**: Explore `/tmp/buildroot-output/rockchip_rk3506_picocalc_luckfox/build/`
+- **Debug package builds**: Check extracted source code and build logs
+- **Test manual compilation**: Try compilation steps manually
+- **Inspect configurations**: Review BuildRoot and kernel configurations
+
+### BuildRoot Make Commands
+
+Inside the BuildRoot environment (or via `buildroot-make:`), you have access to all standard BuildRoot make targets:
+
+```bash
+# Package-specific commands
+make <package>-extract     # Extract package source
+make <package>-patch       # Apply patches to package
+make <package>-configure   # Configure package
+make <package>-build       # Build package
+make <package>-install     # Install package to staging
+make <package>-dirclean    # Clean package completely
+make <package>-rebuild     # Clean and rebuild package
+
+# Configuration commands
+make menuconfig           # Interactive BuildRoot configuration
+make savedefconfig        # Save current config as defconfig
+
+# Cleanup commands
+make clean                # Clean build artifacts
+make distclean           # Complete cleanup including downloads
+```
+
+### Package Development Workflow
+
+When developing or debugging packages (like fixing patches):
+
+1. **Clean the package**: `./build.sh buildroot-make:rtl8188fu-dirclean`
+2. **Open development shell**: `./build.sh buildroot-shell`
+3. **Extract and examine**: `make rtl8188fu-extract && cd build/rtl8188fu-*/`
+4. **Apply patches manually**: `make rtl8188fu-patch` (or apply manually to debug)
+5. **Test compilation**: `make rtl8188fu-build`
+6. **Exit and rebuild**: `exit` then `./build.sh buildroot-make:rtl8188fu`
+
+### Patch Development Tips
+
+- Use `buildroot-shell` to examine extracted source code structure
+- Test patches manually before adding them to the package
+- Use `dirclean` to ensure clean rebuilds when testing patches
+- Check BuildRoot manual for advanced package development: https://buildroot.org/downloads/manual/manual.html#pkg-build-steps
+
 ## Troubleshooting
 
 - Ensure you have the correct LuckFox Lyra SDK tarball in the root directory

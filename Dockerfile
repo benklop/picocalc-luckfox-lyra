@@ -1,7 +1,33 @@
 # Use Ubuntu 22.04 as the base image
+FROM ubuntu:22.04 as unpacker
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    python-is-python3 \
+    python2 \
+    tar \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python2 1 \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3 2 \
+    && update-alternatives --set python /usr/bin/python2
+
+# Latest Luckfox Lyra SDK:
+# Remove .repo, rtos, and .git directories to reduce image size.
+# All together this reduces the size by around 7 GB.
+RUN mkdir -p /opt/Lyra-SDK
+COPY Luckfox_Lyra_SDK.tar.gz /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
+RUN tar -xzf /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz -C /opt/Lyra-SDK
+RUN rm /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
+RUN mkdir -p /opt/Lyra-SDK/output /opt/Lyra-SDK/buildroot/output
+WORKDIR /opt/Lyra-SDK
+RUN ./.repo/repo/repo sync -l
+RUN rm -rf .repo rtos && \
+    find . -type d -name ".git" -exec rm -rf {} +
+
 FROM ubuntu:22.04 as builder
 
-ARG SDK_URL=https://drive.google.com/file/d/1bQrszU23AyFWGS9-mnIetGobsmtvg13W/view?usp=drive_link
 # Set environment variables to avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 # Configure ccache
@@ -20,13 +46,57 @@ ENV NINJA_STATUS="[%f/%t] "
 
 
 # Update and install required dependencies
-RUN apt-get update && apt-get install -y git ssh make gcc libssl-dev \
-    liblz4-tool expect expect-dev g++ patchelf chrpath gawk texinfo chrpath \
-    diffstat binfmt-support qemu-user-static live-build bison flex fakeroot \
-    cmake gcc-multilib g++-multilib unzip device-tree-compiler ncurses-dev \
-    libgucharmap-2-90-dev bzip2 expat gpgv2 cpp-aarch64-linux-gnu libgmp-dev \
-    libmpc-dev bc python-is-python3 python2 rsync curl file ccache util-linux \
-    bsdmainutils python3-pip \
+RUN apt-get update && apt-get install -y \
+    autoconf \
+    automake \
+    autotools-dev \
+    bc \
+    binfmt-support \
+    bison \
+    bsdmainutils \
+    bzip2 \
+    ccache \
+    chrpath \
+    cmake \
+    cpp-aarch64-linux-gnu \
+    cpanminus \
+    curl \
+    device-tree-compiler \
+    diffstat \
+    expat \
+    expect \
+    expect-dev \
+    fakeroot \
+    file \
+    flex \
+    g++ \
+    g++-multilib \
+    gawk \
+    gcc \
+    gcc-multilib \
+    git \
+    gpgv2 \
+    libgmp-dev \
+    libgucharmap-2-90-dev \
+    liblz4-tool \
+    libmpc-dev \
+    libperl-dev \
+    libssl-dev \
+    libtool \
+    live-build \
+    make \
+    ncurses-dev \
+    patchelf \
+    perl \
+    pkg-config \
+    python-is-python3 \
+    python2 \
+    qemu-user-static \
+    rsync \
+    ssh \
+    texinfo \
+    unzip \
+    util-linux \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configure the required python2 environment
@@ -34,23 +104,19 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python2 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3 2 \
     && update-alternatives --set python /usr/bin/python2
 
-RUN pip3 install gdown
+# Configure Perl environment for autotools
+ENV PERL5LIB="/usr/share/autoconf:/usr/share/automake-1.16:/usr/share/perl5:/usr/lib/x86_64-linux-gnu/perl5/5.34:/usr/share/perl/5.34"
+ENV PERLLIB="/usr/share/autoconf:/usr/share/automake-1.16:/usr/share/perl5:/usr/lib/x86_64-linux-gnu/perl5/5.34:/usr/share/perl/5.34"
 
-RUN mkdir -p /opt/Lyra-SDK
+# Fix autotools Perl module paths - create symlinks to make Autom4te and Automake modules findable
+RUN mkdir -p /usr/share/perl5/Autom4te /usr/share/perl5/Automake && \
+    find /usr/share/autoconf -name "*.pm" -exec ln -sf {} /usr/share/perl5/Autom4te/ \; 2>/dev/null || true && \
+    find /usr/share/automake* -name "*.pm" -exec ln -sf {} /usr/share/perl5/Automake/ \; 2>/dev/null || true
 
+COPY --from=unpacker /opt/Lyra-SDK /opt/Lyra-SDK
 COPY ./base /opt/Lyra-SDK/customizations/base
 COPY ./scripts/prepare.sh /opt/Lyra-SDK/customizations/prepare.sh
 COPY ./docker/entrypoint.sh /opt/Lyra-SDK/entrypoint.sh
-
-# Latest Luckfox Lyra SDK:
-#
-RUN gdown --fuzzy $SDK_URL -O /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz && \
-    tar -xzf /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz -C /opt/Lyra-SDK && \
-    rm /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz && \
-    mkdir -p /opt/Lyra-SDK/output /opt/Lyra-SDK/buildroot/output && \
-    cd /opt/Lyra-SDK && \
-    ./.repo/repo/repo sync -l && \
-    rm -rf .repo rtos
 
 RUN cd /opt/Lyra-SDK/customizations && \
     ./prepare.sh

@@ -10,6 +10,10 @@ buildroot-output
 # Docker build cache and temporary files
 .dockerignore
 
+# SDK download
+Luckfox_Lyra_SDK.tar.gz*
+Luckfox_Lyra_SDK.tar.gz
+
 # Common editor and system files
 .vscode/
 .idea/

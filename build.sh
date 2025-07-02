@@ -54,32 +54,35 @@ fi
 
 # Run the Docker container 
 echo "Running build container..."
+echo "Mounted output directory to /opt/Lyra-SDK/output"
+echo "Mounted configs directory to /opt/Lyra-SDK/buildroot/configs"
+echo "Mounted buildroot output directory to /opt/Lyra-SDK/buildroot/output"
 
 # Run the container with a name so we can copy files out later
 CONTAINER_NAME="picocalc-lyra-build-$(date +%s)"
 
 # Prepare Docker volume mounts
 DOCKER_VOLUMES=(
-    "-v" "$(pwd)/.ccache:/tmp/.ccache:Z"
-    "-v" "$(pwd)/output:/tmp/output:Z"
-    "-v" "$(pwd)/config:/tmp/config:Z"
-    "-v" "$(pwd)/buildroot-output:/tmp/buildroot-output:Z"
+    "-v" "$(pwd)/.ccache:/home/build/.ccache:Z"
+    "-v" "$(pwd)/output:/opt/Lyra-SDK/output:Z"
+    "-v" "$(pwd)/config:/opt/Lyra-SDK/buildroot/configs:Z"
+    "-v" "$(pwd)/buildroot-output:/opt/Lyra-SDK/buildroot/output:Z"
 )
 
 # Add package set volume if specified
 if [[ -n "$PACKAGE_SET_PATH" ]]; then
-    DOCKER_VOLUMES+=("-v" "$PACKAGE_SET_PATH:/tmp/package-set:Z")
+    DOCKER_VOLUMES+=("-v" "$PACKAGE_SET_PATH:/opt/package-set:Z")
     # Add the package set flag to the build arguments
-    BUILD_ARGS=("--package-set" "/tmp/package-set" "${BUILD_ARGS[@]}")
+    BUILD_ARGS=("--package-set" "/opt/package-set" "${BUILD_ARGS[@]}")
 fi
 
 # Prepare environment variables
 DOCKER_ENV=(
-    "-e" "CCACHE_DIR=/tmp/.ccache"
+    "-e" "CCACHE_DIR=/home/build/.ccache"
 )
 
 # Run the container
-docker run -it --name "$CONTAINER_NAME" \
+docker run -it --rm --name "$CONTAINER_NAME" \
     "${DOCKER_VOLUMES[@]}" \
     "${DOCKER_ENV[@]}" \
     -w /opt/Lyra-SDK \
