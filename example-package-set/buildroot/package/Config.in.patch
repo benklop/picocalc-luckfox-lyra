@@ -1,0 +1,10 @@
+--- a/buildroot/package/Config.in
++++ b/buildroot/package/Config.in
+@@ -400,6 +400,7 @@
+ 	source "package/dtc/Config.in"
+ 	source "package/dtv-scan-tables/Config.in"
+ 	source "package/dvb-apps/Config.in"
++	source "package/example-package/Config.in"
+ 	source "package/dvblast/Config.in"
+ 	source "package/dvbsnoop/Config.in"
+ 	source "package/eeprog/Config.in"

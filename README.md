@@ -65,6 +65,41 @@ docker run --rm -v "$(pwd)/output:/opt/output" picocalc-lyra-builder
 
 The primary output is `update.img`, which contains the complete system image ready to be flashed to an SD card for use with the PicoCalc. Individual components are also provided for advanced users who need to flash specific partitions.
 
+## Package Sets
+
+The build system supports applying additional package sets to extend functionality:
+
+```bash
+# Build with additional packages
+./build.sh --package-set ./my-packages all
+
+# Build specific configuration with package set
+./build.sh --package-set ./gaming-packages picocalc_luckfox_lyra_buildroot_sdmmc_defconfig
+```
+
+### Creating Package Sets
+
+Package sets follow the same directory structure as the base SDK:
+
+```
+my-package-set/
+├── buildroot/
+│   └── package/
+│       ├── my-package/
+│       │   ├── Config.in
+│       │   └── my-package.mk
+│       └── Config.in.patch      # Adds package to Buildroot menu
+├── kernel-6.1/
+│   └── drivers/my-driver/       # Custom kernel modules
+└── README.md
+```
+
+**File Types:**
+- Regular files: Copied directly to the SDK
+- `.patch` files: Applied as patches to existing SDK files
+
+See `example-package-set/` for a complete example.
+
 ## Customization
 
 To customize the build:
@@ -74,12 +109,34 @@ To customize the build:
 3. Modify device tree in `src/*.dts`
 4. Adjust Buildroot packages in `src/*defconfig`
 5. Add additional patches or scripts as needed
+6. Create package sets for reusable modifications
 
 ## Troubleshooting
 
 - Ensure you have the correct LuckFox Lyra SDK tarball in the root directory
 - Check that Docker is running and you have sufficient disk space
 - Build logs are displayed during the process for debugging
+
+## Automated Releases
+
+This project includes automated firmware builds using GitHub Actions. When you create a new release tag:
+
+1. **Tag a release**: Create and push a version tag (e.g., `v1.0.0`)
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. **Automatic build**: GitHub Actions will automatically:
+   - Build the Docker container
+   - Run `./setup.sh` to configure the build environment
+   - Run `./build.sh all` to build the complete firmware
+   - Package all firmware files (`update.img`, `boot.img`, etc.)
+   - Create a GitHub release with downloadable firmware files
+
+3. **Download firmware**: Users can download the built firmware directly from the GitHub releases page
+
+The automated builds ensure consistent, reproducible firmware builds and make it easy for users to get the latest firmware without needing to set up the build environment themselves.
 
 ## Credits
 

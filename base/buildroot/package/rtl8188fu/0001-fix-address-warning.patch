@@ -1,31 +1,14 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: PicoCalc Builder <builder@picocalc.dev>
-Date: Mon, 1 Jul 2025 20:30:00 +0000
-Subject: [PATCH] Fix -Werror=address warning in rtw_sta_mgt.c
-
-Remove unnecessary NULL check for the address of a struct member,
-which will always be non-NULL. This check causes compilation to
-fail when -Werror=address is enabled.
-
-The code was checking if(&psta->lock != NULL) which is always true
-since &psta->lock is the address of a struct member and will never
-be NULL. The check appears to be leftover code that should be removed.
-
-Signed-off-by: PicoCalc Builder <builder@picocalc.dev>
----
- core/rtw_sta_mgt.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
 diff --git a/core/rtw_sta_mgt.c b/core/rtw_sta_mgt.c
-index 1234567..abcdefg 100644
+index 68eda77..1deccba 100644
 --- a/core/rtw_sta_mgt.c
 +++ b/core/rtw_sta_mgt.c
-@@ -345,8 +345,7 @@ u32 rtw_mfree_stainfo(struct sta_info *psta)
- 	}
+@@ -345,8 +345,7 @@ void rtw_mfree_stainfo(struct sta_info *psta)
+ {
+ _func_enter_;
  
- 	_rtw_spinlock_free(&psta->lock);
 -	if(&psta->lock != NULL)
--		_rtw_spinunlock(&psta->lock);
-+	_rtw_spinunlock(&psta->lock);
+-		 _rtw_spinlock_free(&psta->lock);
++	_rtw_spinlock_free(&psta->lock);
  
- 	list_del_init(&psta->list);
+ 	_rtw_free_sta_xmit_priv_lock(&psta->sta_xmitpriv);
+ 	_rtw_free_sta_recv_priv_lock(&psta->sta_recvpriv);
