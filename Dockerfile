@@ -23,7 +23,7 @@ RUN rm /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
 RUN mkdir -p /opt/Lyra-SDK/output /opt/Lyra-SDK/buildroot/output
 WORKDIR /opt/Lyra-SDK
 RUN ./.repo/repo/repo sync -l
-RUN rm -rf .repo rtos && \
+RUN rm -rf .repo && \
     find . -type d -name ".git" -exec rm -rf {} +
 
 FROM ubuntu:22.04 as builder
