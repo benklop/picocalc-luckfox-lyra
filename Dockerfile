@@ -104,15 +104,6 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python2 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3 2 \
     && update-alternatives --set python /usr/bin/python2
 
-# Configure Perl environment for autotools
-ENV PERL5LIB="/usr/share/autoconf:/usr/share/automake-1.16:/usr/share/perl5:/usr/lib/x86_64-linux-gnu/perl5/5.34:/usr/share/perl/5.34"
-ENV PERLLIB="/usr/share/autoconf:/usr/share/automake-1.16:/usr/share/perl5:/usr/lib/x86_64-linux-gnu/perl5/5.34:/usr/share/perl/5.34"
-
-# Fix autotools Perl module paths - create symlinks to make Autom4te and Automake modules findable
-RUN mkdir -p /usr/share/perl5/Autom4te /usr/share/perl5/Automake && \
-    find /usr/share/autoconf -name "*.pm" -exec ln -sf {} /usr/share/perl5/Autom4te/ \; 2>/dev/null || true && \
-    find /usr/share/automake* -name "*.pm" -exec ln -sf {} /usr/share/perl5/Automake/ \; 2>/dev/null || true
-
 COPY --from=unpacker /opt/Lyra-SDK /opt/Lyra-SDK
 COPY ./base /opt/Lyra-SDK/customizations/base
 COPY ./scripts/prepare.sh /opt/Lyra-SDK/customizations/prepare.sh

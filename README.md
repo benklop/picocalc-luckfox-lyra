@@ -156,7 +156,7 @@ The `buildroot-shell` command is particularly useful for development:
 
 This opens an interactive shell inside the BuildRoot environment where you can:
 
-- **Examine the build environment**: Explore `/tmp/buildroot-output/rockchip_rk3506_picocalc_luckfox/build/`
+- **Examine the build environment**: Explore the buildroot
 - **Debug package builds**: Check extracted source code and build logs
 - **Test manual compilation**: Try compilation steps manually
 - **Inspect configurations**: Review BuildRoot and kernel configurations
