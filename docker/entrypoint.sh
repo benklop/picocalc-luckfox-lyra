@@ -70,9 +70,16 @@ resolve_firmware_symlinks() {
     # Find all symlinks in the firmware directory and resolve them
     find "$firmware_dir" -type l | while read -r symlink; do
         local filename=$(basename "$symlink")
+        
+        # Skip if the symlink target doesn't exist
+        if [ ! -e "$symlink" ]; then
+            echo "  Skipping $filename (target not found)"
+            continue
+        fi
+        
         echo "  Resolving $filename"
-        # Copy the target file, replacing the symlink (cp -L follows symlinks)
-        cp -L "$symlink" "$symlink"
+        # Copy the target file to a temporary location, then move it to replace the symlink
+        cp -L "$symlink" "$symlink.tmp" && mv "$symlink.tmp" "$symlink"
     done
     
     echo "Firmware symlinks resolved"
