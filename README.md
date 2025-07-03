@@ -13,7 +13,7 @@ These features are actively being developed. Contributions and testing are welco
 ## Prerequisites
 
 - Docker installed on your system
-- The LuckFox Lyra SDK tarball (`Luckfox_Lyra_SDK_*.tar.gz`) placed in the root directory
+- Python3 and pip to download the SDK
 
 ## Quick Start
 
