@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/bash -e
 
-SDK_DIR=$(realpath $(basename "$0")/..)
+SDK_DIR=$(realpath $(dirname "$0")/..)
 UPGRADETOOL=$SDK_DIR/output/upgrade_tool
 ROCKDEV_DIR=$SDK_DIR/output/firmware
 LOADER=$ROCKDEV_DIR/MiniLoaderAll.bin

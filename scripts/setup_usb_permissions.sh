@@ -51,10 +51,31 @@ check_prerequisites() {
     echo
 }
 
+get_target_group() {
+    # Check if plugdev group exists, fall back to dialout
+    if getent group plugdev >/dev/null 2>&1; then
+        echo "plugdev"
+    elif getent group dialout >/dev/null 2>&1; then
+        echo "dialout"
+    else
+        echo ""
+    fi
+}
+
 check_existing_setup() {
     echo -e "${BLUE}🔍 Checking existing setup...${NC}"
     
     local needs_setup=false
+    local target_group
+    target_group=$(get_target_group)
+    
+    if [ -z "$target_group" ]; then
+        echo -e "${RED}❌ Error: Neither 'plugdev' nor 'dialout' group exists${NC}"
+        echo "Cannot determine which group to use for USB device access"
+        exit 1
+    fi
+    
+    echo -e "${BLUE}ℹ️  Using group: $target_group${NC}"
     
     # Check if udev rule is installed
     if [ -f "$UDEV_DEST" ]; then
@@ -64,24 +85,29 @@ check_existing_setup() {
         needs_setup=true
     fi
     
-    # Check if user is in plugdev group
-    if groups "$USER" | grep -q '\bplugdev\b'; then
-        echo -e "${GREEN}✅ User '$USER' is in plugdev group${NC}"
+    # Check if user is in target group
+    if groups "$USER" | grep -q "\b$target_group\b"; then
+        echo -e "${GREEN}✅ User '$USER' is in $target_group group${NC}"
     else
-        echo -e "${YELLOW}⚠️  User '$USER' is not in plugdev group${NC}"
+        echo -e "${YELLOW}⚠️  User '$USER' is not in $target_group group${NC}"
         needs_setup=true
     fi
     
     # Test device access if device is connected
     if lsusb | grep -q "2207:350f"; then
         echo -e "${GREEN}✅ Rockchip device detected${NC}"
-        # Try to access the device
+        # Try to find the actual USB device file
         local device_path
-        device_path=$(find /dev/bus/usb -name "*" -exec lsusb -D {} 2>/dev/null \; | grep -B5 "2207:350f" | grep "Device:" | cut -d' ' -f2 | head -1)
-        if [ -n "$device_path" ] && [ -r "$device_path" ] && [ -w "$device_path" ]; then
-            echo -e "${GREEN}✅ Device is accessible without sudo${NC}"
+        device_path=$(lsusb -d 2207:350f | head -1 | sed 's/.*Bus \([0-9]*\) Device \([0-9]*\).*/\/dev\/bus\/usb\/\1\/\2/')
+        if [ -n "$device_path" ] && [ -e "$device_path" ]; then
+            if [ -r "$device_path" ] && [ -w "$device_path" ]; then
+                echo -e "${GREEN}✅ Device is accessible without sudo${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Device found but not accessible without sudo${NC}"
+                needs_setup=true
+            fi
         else
-            echo -e "${YELLOW}⚠️  Device found but not accessible without sudo${NC}"
+            echo -e "${YELLOW}⚠️  Device found but could not locate device file${NC}"
             needs_setup=true
         fi
     else
@@ -118,11 +144,19 @@ install_udev_rule() {
 }
 
 add_user_to_group() {
-    echo -e "${BLUE}👥 Adding user to plugdev group...${NC}"
+    local target_group
+    target_group=$(get_target_group)
     
-    # Add user to plugdev group
-    sudo usermod -a -G plugdev "$USER"
-    echo -e "${GREEN}✅ User '$USER' added to plugdev group${NC}"
+    if [ -z "$target_group" ]; then
+        echo -e "${RED}❌ Error: Neither 'plugdev' nor 'dialout' group exists${NC}"
+        exit 1
+    fi
+    
+    echo -e "${BLUE}👥 Adding user to $target_group group...${NC}"
+    
+    # Add user to target group
+    sudo usermod -a -G "$target_group" "$USER"
+    echo -e "${GREEN}✅ User '$USER' added to $target_group group${NC}"
     
     echo
 }
@@ -131,28 +165,36 @@ show_completion_message() {
     echo -e "${GREEN}🎉 Setup completed successfully!${NC}"
     echo
     echo -e "${YELLOW}📋 Next steps:${NC}"
-    echo "1. ${YELLOW}Log out and log back in${NC} (or restart your session)"
+    echo -e "1. ${YELLOW}Log out and log back in${NC} (or restart your session)"
     echo "   This is required for the group membership changes to take effect."
     echo
     echo "2. Connect your PicoCalc in loader mode and test:"
-    echo "   ${BLUE}lsusb | grep Rockchip${NC}"
+    echo -e "   ${BLUE}lsusb | grep Rockchip${NC}"
     echo
     echo "3. You should now be able to flash without sudo:"
-    echo "   ${BLUE}./flash.sh${NC}"
+    echo -e "   ${BLUE}./flash.sh${NC}"
     echo
     echo -e "${BLUE}ℹ️  If you still have permission issues after logging out/in:${NC}"
-    echo "   • Check if the device is detected: ${BLUE}lsusb | grep 2207:350f${NC}"
-    echo "   • Verify group membership: ${BLUE}groups${NC}"
+    echo -e "   • Check if the device is detected: ${BLUE}lsusb | grep 2207:350f${NC}"
+    echo -e "   • Verify group membership: ${BLUE}groups${NC}"
     echo "   • Try unplugging and reconnecting the device"
     echo
 }
 
 confirm_installation() {
+    local target_group
+    target_group=$(get_target_group)
+    
+    if [ -z "$target_group" ]; then
+        echo -e "${RED}❌ Error: Neither 'plugdev' nor 'dialout' group exists${NC}"
+        exit 1
+    fi
+    
     echo -e "${YELLOW}🔧 Ready to set up USB permissions for Rockchip devices${NC}"
     echo
     echo "This will:"
     echo "• Install udev rule to /etc/udev/rules.d/"
-    echo "• Add your user to the 'plugdev' group"
+    echo "• Add your user to the '$target_group' group"
     echo "• Allow flashing without sudo"
     echo
     read -p "Continue with setup? (y/N): " -n 1 -r

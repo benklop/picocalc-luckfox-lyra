@@ -29,11 +29,11 @@ print_instructions() {
     echo -e "${GREEN}1. Prepare the PicoCalc:${NC}"
     echo "   • Insert SD card into the LuckFox Lyra SD card slot"
     echo "   • Boot the PicoCalc to Linux"
-    echo "   • Log in and run: ${BLUE}reboot loader${NC}"
+    echo -e "   • Log in and run: ${BLUE}reboot loader${NC}"
     echo "   • The device will reboot into loader mode"
     echo
     echo -e "${GREEN}2. Connect USB:${NC}"
-    echo "   • Connect USB-C cable to the ${YELLOW}LOWER${NC} USB-C port (LuckFox Lyra)"
+    echo -e "   • Connect USB-C cable to the ${YELLOW}LOWER${NC} USB-C port (LuckFox Lyra)"
     echo "   • Connect other end to your computer"
     echo "   • The device should be detected in loader mode"
     echo
@@ -49,12 +49,33 @@ print_instructions() {
     echo
 }
 
+get_target_group() {
+    # Check if plugdev group exists, fall back to dialout
+    if getent group plugdev >/dev/null 2>&1; then
+        echo "plugdev"
+    elif getent group dialout >/dev/null 2>&1; then
+        echo "dialout"
+    else
+        echo ""
+    fi
+}
+
 check_usb_permissions() {
     echo -e "${BLUE}🔍 Checking USB permissions...${NC}"
     
     local needs_setup=false
     local udev_rule_installed=false
     local user_in_group=false
+    local target_group
+    target_group=$(get_target_group)
+    
+    if [ -z "$target_group" ]; then
+        echo -e "${RED}❌ Error: Neither 'plugdev' nor 'dialout' group exists${NC}"
+        echo "Cannot determine which group to use for USB device access"
+        exit 1
+    fi
+    
+    echo -e "${BLUE}ℹ️  Using group: $target_group${NC}"
     
     # Check if udev rule is installed
     if [ -f "/etc/udev/rules.d/99-rockchip.rules" ]; then
@@ -65,12 +86,12 @@ check_usb_permissions() {
         needs_setup=true
     fi
     
-    # Check if user is in plugdev group
-    if groups "$USER" | grep -q '\bplugdev\b'; then
+    # Check if user is in target group
+    if groups "$USER" | grep -q "\b$target_group\b"; then
         user_in_group=true
-        echo -e "${GREEN}✅ User in plugdev group${NC}"
+        echo -e "${GREEN}✅ User in $target_group group${NC}"
     else
-        echo -e "${YELLOW}⚠️  User not in plugdev group${NC}"
+        echo -e "${YELLOW}⚠️  User not in $target_group group${NC}"
         needs_setup=true
     fi
     
@@ -78,8 +99,8 @@ check_usb_permissions() {
         echo -e "${YELLOW}⚠️  USB permissions not set up for non-root flashing${NC}"
         echo
         echo -e "${BLUE}ℹ️  Options:${NC}"
-        echo "1. Run: ${BLUE}./scripts/setup_usb_permissions.sh${NC} (recommended)"
-        echo "2. Flash with sudo: ${BLUE}sudo ./flash.sh${NC}"
+        echo -e "1. Run: ${BLUE}./scripts/setup_usb_permissions.sh${NC} (recommended)"
+        echo -e "2. Flash with sudo: ${BLUE}sudo ./flash.sh${NC}"
         echo
         read -p "Would you like to set up USB permissions now? (y/N): " -n 1 -r
         echo
