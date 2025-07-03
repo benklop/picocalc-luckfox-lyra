@@ -13,6 +13,7 @@ buildroot-output
 # SDK download
 Luckfox_Lyra_SDK.tar.gz*
 Luckfox_Lyra_SDK.tar.gz
+SDK-extracted
 
 # Common editor and system files
 .vscode/

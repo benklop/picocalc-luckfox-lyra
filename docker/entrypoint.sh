@@ -85,6 +85,18 @@ resolve_firmware_symlinks() {
     echo "Firmware symlinks resolved"
 }
 
+copy_upgrade_utility() {
+    local upgrade_utility_path="/opt/Lyra-SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool"
+    
+    if [ -f "$upgrade_utility_path" ]; then
+        echo "Copying upgrade utility to output directory..."
+        cp "$upgrade_utility_path" /opt/Lyra-SDK/output/
+        echo "Upgrade utility copied successfully"
+    else
+        echo "Warning: Upgrade utility not found at $upgrade_utility_path"
+    fi
+}
+
 # Parse command line arguments to extract package set information
 PACKAGE_SET_PATH=""
 FILTERED_ARGS=()
@@ -127,6 +139,14 @@ if [ ${#FILTERED_ARGS[@]} -gt 0 ]; then
     # After build completes, resolve firmware symlinks so they persist outside the container
     if [ $EXIT_CODE -eq 0 ]; then
         resolve_firmware_symlinks
+    fi
+
+    if [ $EXIT_CODE -eq 0 ]; then
+        echo "SDK build completed successfully"
+
+        copy_upgrade_utility
+    else
+        echo "Error: SDK build failed with exit code $EXIT_CODE"
     fi
 fi
  

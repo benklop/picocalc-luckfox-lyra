@@ -1,0 +1,18 @@
+# udev rules for Rockchip RK3506 devices (PicoCalc LuckFox Lyra)
+# This allows non-root users to access the device for flashing
+#
+# Installation:
+#   sudo cp scripts/99-rockchip.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger
+#   sudo usermod -a -G plugdev $USER
+#   # Log out and back in for group changes to take effect
+
+# Rockchip RK3506 in loader mode (for flashing)
+SUBSYSTEM=="usb", ATTR{idVendor}=="2207", ATTR{idProduct}=="350f", MODE="0666", GROUP="plugdev", TAG+="uaccess"
+
+# Rockchip RK3506 in maskrom mode (for low-level recovery)
+SUBSYSTEM=="usb", ATTR{idVendor}=="2207", ATTR{idProduct}=="350a", MODE="0666", GROUP="plugdev", TAG+="uaccess"
+
+# Additional Rockchip product IDs that might be used
+SUBSYSTEM=="usb", ATTR{idVendor}=="2207", ATTR{idProduct}=="350*", MODE="0666", GROUP="plugdev", TAG+="uaccess"
