@@ -34,8 +34,10 @@ The build system:
    - Device tree updates for the PicoCalc hardware
    - Buildroot configuration for SD card storage
    - RTL8188FU WiFi driver patch
+   - Custom package configurations
 3. **Builds the complete system** using the configured toolchain
 4. **Extracts all build artifacts** to the `./output/` directory for easy access
+5. **Provides flashing tools** for easy deployment to hardware
 
 ## Manual Docker Usage
 
@@ -53,7 +55,14 @@ docker run --rm -v "$(pwd)/output:/opt/output" picocalc-lyra-builder
 
 - `Dockerfile` - Docker container definition
 - `build.sh` - Main build script (run this)
-- `src/` - Source files and configurations:
+- `flash.sh` - Firmware flashing script with safety checks
+- `setup_usb.sh` - Convenience wrapper for USB permissions setup
+- `FLASHING.md` - Comprehensive flashing documentation
+- `scripts/` - Build and flashing scripts:
+  - `rkflash.sh` - Low-level Rockchip flashing tool
+  - `setup_usb_permissions.sh` - USB permissions setup script
+  - `99-rockchip.rules` - udev rules for USB device access
+- `base/` - Source files and configurations:
   - `build.sh` - Internal build script run inside the container
   - `*.config` - Kernel configuration files
   - `*.dts` - Device tree source files
@@ -64,6 +73,26 @@ docker run --rm -v "$(pwd)/output:/opt/output" picocalc-lyra-builder
 ## Build Output
 
 The primary output is `update.img`, which contains the complete system image ready to be flashed to an SD card for use with the PicoCalc. Individual components are also provided for advanced users who need to flash specific partitions.
+
+## Flashing
+
+Once the build is complete, you can flash the firmware to your PicoCalc LuckFox Lyra:
+
+```bash
+# Quick flash (recommended)
+./flash.sh
+
+# Set up USB permissions for non-root flashing
+./scripts/setup_usb_permissions.sh
+```
+
+For detailed flashing instructions, troubleshooting, and hardware setup, see **[FLASHING.md](FLASHING.md)**.
+
+**Quick Flashing Steps:**
+1. Insert SD card into the PicoCalc
+2. Boot to Linux and run `reboot loader` (or use hardware boot button)
+3. Connect USB-C cable to the **LOWER** USB-C port
+4. Run `./flash.sh` and follow the prompts
 
 ## Package Sets
 
@@ -207,6 +236,8 @@ When developing or debugging packages (like fixing patches):
 - Ensure you have the correct LuckFox Lyra SDK tarball in the root directory
 - Check that Docker is running and you have sufficient disk space
 - Build logs are displayed during the process for debugging
+- For flashing issues, see [FLASHING.md](FLASHING.md) troubleshooting section
+- Set up USB permissions for non-root flashing: `./scripts/setup_usb_permissions.sh`
 
 ## Automated Releases
 

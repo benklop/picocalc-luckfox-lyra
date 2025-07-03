@@ -11,7 +11,7 @@ The PicoCalc LuckFox Lyra uses Rockchip RK3506 SoC and can be flashed via USB us
 ### Hardware Requirements
 - PicoCalc LuckFox Lyra device
 - USB-C cable
-- MicroSD card (Class 10 or better recommended)
+- MicroSD card
 - Computer running Linux
 
 ### Software Requirements
@@ -46,7 +46,7 @@ Run the provided setup script:
 
 This script will:
 - Install the necessary udev rules
-- Add your user to the `plugdev` group  
+- Add your user to the appropriate group (`plugdev` or `dialout`)
 - Allow flashing without sudo privileges
 
 After running the script, **log out and log back in** for the changes to take effect.
@@ -63,8 +63,8 @@ sudo cp scripts/99-rockchip.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 
-# Add user to plugdev group
-sudo usermod -a -G plugdev $USER
+# Add user to appropriate group (plugdev preferred, dialout fallback)
+sudo usermod -a -G plugdev $USER  # or dialout if plugdev doesn't exist
 
 # Log out and back in for changes to take effect
 ```
@@ -74,8 +74,10 @@ sudo usermod -a -G plugdev $USER
 To verify the setup is working:
 
 ```bash
-# Check if your user is in the plugdev group
+# Check if your user is in the appropriate group
 groups
+
+# Should show either 'plugdev' or 'dialout' among the groups
 
 # With device connected in loader mode, check detection
 lsusb | grep Rockchip
@@ -225,7 +227,17 @@ Follow the on-screen prompts and confirm when ready.
 **Solutions**:
 - **Recommended**: Run USB permissions setup: `./scripts/setup_usb_permissions.sh`
 - **Alternative**: Run with sudo: `sudo ./flash.sh`
-- **Manual**: Add user to dialout group: `sudo usermod -a -G dialout $USER`
+- **Manual**: Add user to appropriate group: `sudo usermod -a -G plugdev $USER` (or `dialout` if `plugdev` doesn't exist)
+
+### Shared Memory Permission Issues
+
+**Symptoms**: "shm_open: Permission denied" or "Test Device Fail" errors
+
+**Solutions**:
+- Remove stale shared memory files: `sudo rm -f /dev/shm/upgrade_tool_mutex`
+- Ensure no other instances of upgrade_tool are running
+- Run with sudo if the issue persists: `sudo ./flash.sh`
+- This is a known limitation of the Rockchip upgrade_tool on some systems
 
 ### Device Won't Boot After Flash
 
@@ -235,7 +247,6 @@ Follow the on-screen prompts and confirm when ready.
 - Verify SD card is properly seated
 - Try reflashing with a known-good image
 - Check if device enters loader mode (may need recovery)
-- Ensure correct firmware was flashed for your hardware revision
 
 ## Advanced USB Permissions Setup
 
@@ -260,8 +271,8 @@ EOF
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 
-# Add user to plugdev group  
-sudo usermod -a -G plugdev $USER
+# Add user to appropriate group (plugdev preferred, dialout fallback)
+sudo usermod -a -G plugdev $USER  # or dialout if plugdev doesn't exist
 
 # Log out and back in for group changes to take effect
 ```
