@@ -2,6 +2,14 @@
 
 This repository provides a Docker-based build system for creating custom BuildRoot Linux images for the LuckFox Lyra, specifically tailored to run on the ClockworkPi PicoCalc.
 
+## ⚠️ Work in Progress
+
+**Known Issues / Not Yet Working:**
+- **Stereo hardware PWM audio** - Audio output is not yet functional
+- **WiFi with RTL8188FU chip** - WiFi driver integration is in progress but not working
+
+These features are actively being developed. Contributions and testing are welcome!
+
 ## Prerequisites
 
 - Docker installed on your system
