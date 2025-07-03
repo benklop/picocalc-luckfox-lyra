@@ -6,8 +6,9 @@
 
 set -e
 
-# Default flash type
+# Default flash type and options
 FLASH_TYPE="${1:-update}"
+AUTO_YES=false
 
 # Colors for output
 RED='\033[0;31m'
@@ -161,6 +162,13 @@ check_prerequisites() {
 }
 
 confirm_flash() {
+    if [ "$AUTO_YES" = true ]; then
+        echo -e "${YELLOW}⚡ Auto-flashing '$FLASH_TYPE' image (--yes mode)${NC}"
+        echo -e "${RED}⚠️  WARNING: This will overwrite the firmware on your PicoCalc!${NC}"
+        echo
+        return
+    fi
+    
     echo -e "${YELLOW}⚡ Ready to flash '$FLASH_TYPE' image${NC}"
     echo
     echo -e "${RED}⚠️  WARNING: This will overwrite the firmware on your PicoCalc!${NC}"
@@ -179,8 +187,11 @@ flash_device() {
     echo
     echo -e "${YELLOW}Make sure your PicoCalc is in loader mode and connected via USB-C!${NC}"
     echo
-    read -p "Press Enter when ready to flash, or Ctrl+C to cancel..."
-    echo
+    
+    if [ "$AUTO_YES" = false ]; then
+        read -p "Press Enter when ready to flash, or Ctrl+C to cancel..."
+        echo
+    fi
     
     # Change to project directory to ensure rkflash.sh can find relative paths
     cd "$(dirname "$0")"
@@ -194,9 +205,7 @@ flash_device() {
         echo -e "${GREEN}✅ Flash completed successfully!${NC}"
         echo
         echo -e "${BLUE}📱 Next steps:${NC}"
-        echo "   • Disconnect USB cable"
-        echo "   • Power cycle the PicoCalc"
-        echo "   • The device should boot from the new firmware"
+        echo "   • The device should now be booting from the new firmware"
         echo
     else
         echo
@@ -214,7 +223,11 @@ flash_device() {
 }
 
 show_usage() {
-    echo "Usage: $0 [flash_type]"
+    echo "Usage: $0 [options] [flash_type]"
+    echo
+    echo "Options:"
+    echo "  -y, --yes     Skip confirmation prompts and flash automatically"
+    echo "  -h, --help    Show this help message"
     echo
     echo "Flash types:"
     echo "  update    - Flash complete update image (default)"
@@ -222,18 +235,41 @@ show_usage() {
     echo "  firmware  - Flash firmware only"
     echo
     echo "Examples:"
-    echo "  $0              # Flash update image"
-    echo "  $0 update       # Flash update image"
-    echo "  $0 recovery     # Flash recovery image"
+    echo "  $0              # Flash update image with prompts"
+    echo "  $0 -y           # Flash update image automatically"
+    echo "  $0 -y update    # Flash update image automatically"
+    echo "  $0 recovery     # Flash recovery image with prompts"
     echo
 }
 
 # Main script
 main() {
-    # Handle help
-    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-        show_usage
-        exit 0
+    # Parse command line arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -y|--yes)
+                AUTO_YES=true
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            -*)
+                echo -e "${RED}Error: Unknown option '$1'${NC}"
+                show_usage
+                exit 1
+                ;;
+            *)
+                FLASH_TYPE="$1"
+                shift
+                ;;
+        esac
+    done
+    
+    # Set default flash type if not specified
+    if [ -z "$FLASH_TYPE" ]; then
+        FLASH_TYPE="update"
     fi
     
     print_header

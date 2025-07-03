@@ -97,6 +97,18 @@ copy_upgrade_utility() {
     fi
 }
 
+copy_misc_files() {
+    local kconfig_path="/opt/Lyra-SDK/kernel/.config"
+
+    if [ -f "$kconfig_path" ]; then
+        echo "Copying kernel config to output directory..."
+        cp "$kconfig_path" /opt/Lyra-SDK/output/kernel-config
+        echo "Kernel config copied successfully"
+    else
+        echo "Warning: Kernel config not found at $kconfig_path"
+    fi
+}
+
 # Parse command line arguments to extract package set information
 PACKAGE_SET_PATH=""
 FILTERED_ARGS=()
@@ -145,6 +157,7 @@ if [ ${#FILTERED_ARGS[@]} -gt 0 ]; then
         echo "SDK build completed successfully"
 
         copy_upgrade_utility
+        copy_misc_files
     else
         echo "Error: SDK build failed with exit code $EXIT_CODE"
     fi
