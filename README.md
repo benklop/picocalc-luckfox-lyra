@@ -17,7 +17,10 @@ These features are actively being developed. Contributions and testing are welco
 
 ## Quick Start
 
-1. **Download the SDK**: Place the LuckFox Lyra SDK tarball in the root directory of this repository.
+1. **Build the Container**: Run the setup script:
+   ```
+   ./setup.sh
+   ```
 
 2. **Run the build**: Execute the build script:
    ```bash
