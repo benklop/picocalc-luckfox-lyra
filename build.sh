@@ -63,7 +63,7 @@ CONTAINER_NAME="picocalc-lyra-build-$(date +%s)"
 
 # Prepare Docker volume mounts
 DOCKER_VOLUMES=(
-    "-v" "$(pwd)/.ccache:/home/build/.ccache:Z"
+    "-v" "$(pwd)/.ccache:/root/.ccache:Z"
     "-v" "$(pwd)/output:/opt/Lyra-SDK/output:Z"
     "-v" "$(pwd)/config:/opt/Lyra-SDK/buildroot/configs:Z"
     "-v" "$(pwd)/buildroot-output:/opt/Lyra-SDK/buildroot/output:Z"
@@ -78,7 +78,7 @@ fi
 
 # Prepare environment variables
 DOCKER_ENV=(
-    "-e" "CCACHE_DIR=/home/build/.ccache"
+    "-e" "CCACHE_DIR=/root/.ccache"
 )
 
 # Run the container

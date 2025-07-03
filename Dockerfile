@@ -30,8 +30,8 @@ FROM ubuntu:22.04 as builder
 
 # Set environment variables to avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
-# Configure ccache
-ENV CCACHE_DIR=/home/build/.ccache
+# Configure ccache for root user
+ENV CCACHE_DIR=/root/.ccache
 ENV CCACHE_MAXSIZE=2G
 ENV CCACHE_SLOPPINESS=pch_defines,time_macros
 ENV CCACHE_COMPRESS=true
