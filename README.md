@@ -35,6 +35,12 @@ These features are actively being developed. Contributions and testing are welco
    - `MiniLoaderAll.bin` - SPL bootloader
    - `parameter.txt` - Partition table information
 
+4. **Flash to hardware**: Deploy the firmware to your PicoCalc LuckFox Lyra:
+   ```bash
+   ./flash.sh
+   ```
+   Follow the prompts to flash `update.img` to your device. See [FLASHING.md](FLASHING.md) for detailed instructions.
+
 ## What This Build Does
 
 The build system:
@@ -59,7 +65,7 @@ If you prefer to run the Docker container manually:
 docker build -t picocalc-lyra-builder .
 
 # Run the container with output volume mount
-docker run --rm -v "$(pwd)/output:/opt/output" picocalc-lyra-builder
+docker run --rm -v "$(pwd)/config:/opt/Lyra-SDK/buildroot/configs:Z" -v "$(pwd)/output:/opt/Lyra-SDK/output:Z" picocalc-lyra-builder --help
 ```
 
 ## File Structure
