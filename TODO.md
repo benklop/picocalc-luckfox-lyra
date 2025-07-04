@@ -27,6 +27,12 @@ This document tracks known issues, work-in-progress features, and planned improv
   - Would streamline flashing workflow significantly
   - **Priority**: Medium
 
+- [ ] **Fix SD card ejection for `reboot loader`** - Device hangs during reboot if external SD card is inserted
+  - Currently users must manually eject SD cards before running `reboot loader`
+  - Should add hook to reboot command to automatically unmount and eject external SD cards
+  - Alternative: modify reboot script to handle mounted SD cards gracefully
+  - **Priority**: Medium
+
 ## 📦 Package System
 
 ### RTL8188FU Driver Package

@@ -30,7 +30,8 @@ print_instructions() {
     echo -e "${GREEN}1. Prepare the PicoCalc:${NC}"
     echo "   • Insert SD card into the LuckFox Lyra SD card slot"
     echo "   • Boot the PicoCalc to Linux"
-    echo -e "   • Log in and run: ${BLUE}reboot loader${NC}"
+    echo "   • ⚠️  EJECT any external SD card before running reboot command"
+    echo -e "   • Log in and run: ${BLUE}reboot loader${NC} (device may hang if SD card is inserted)"
     echo "   • The device will reboot into loader mode"
     echo
     echo -e "${GREEN}2. Connect USB:${NC}"

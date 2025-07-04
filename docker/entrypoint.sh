@@ -110,14 +110,14 @@ copy_misc_files() {
 }
 
 # Parse command line arguments to extract package set information
-PACKAGE_SET_PATH=""
+PACKAGE_SET_PATHS=()
 FILTERED_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --package-set)
             if [[ -n "$2" && "$2" != --* ]]; then
-                PACKAGE_SET_PATH="$2"
+                PACKAGE_SET_PATHS+=("$2")
                 shift 2
             else
                 echo "Error: --package-set requires a path argument"
@@ -131,8 +131,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if a package set should be applied
-if [ -n "$PACKAGE_SET_PATH" ]; then
+# Apply all package sets in order
+for PACKAGE_SET_PATH in "${PACKAGE_SET_PATHS[@]}"; do
     if [ -d "$PACKAGE_SET_PATH" ]; then
         apply_package_set "$PACKAGE_SET_PATH"
     else
@@ -140,7 +140,7 @@ if [ -n "$PACKAGE_SET_PATH" ]; then
         ls -la "$PACKAGE_SET_PATH" 2>/dev/null || echo "Cannot list contents of $PACKAGE_SET_PATH"
         exit 1
     fi
-fi
+done
 
 # If arguments are provided (after filtering), pass them to the SDK build script
 if [ ${#FILTERED_ARGS[@]} -gt 0 ]; then

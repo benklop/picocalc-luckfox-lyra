@@ -3,7 +3,7 @@ set -e
 
 CUR_PATH=$(cd "$(dirname $0)";pwd)
 SRC_PATH=$CUR_PATH/base
-SDK_PATH=$(realpath $CUR_PATH/..)
+SDK_PATH=$CUR_PATH
 IFS=$'\n'
 
 echo "SRC_PATH: $SRC_PATH"
