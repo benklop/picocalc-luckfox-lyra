@@ -3,11 +3,6 @@
 # URL found at https://wiki.luckfox.com/Luckfox-Lyra/Download
 SDK_URL=https://drive.google.com/file/d/1bQrszU23AyFWGS9-mnIetGobsmtvg13W/view?usp=drive_link
 
-# Create output directory for build artifacts
-mkdir -p "$(pwd)/output"
-mkdir -p "$(pwd)/.ccache"
-mkdir -p "$(pwd)/buildroot-output"
-
 # Ensure gdown is installed
 if ! python3 -c "import gdown" 2>/dev/null; then
     echo "gdown not found, installing..."

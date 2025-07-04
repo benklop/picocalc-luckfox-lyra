@@ -1,7 +1,7 @@
 GLKTERM_VERSION = townba
 GLKTERM_BRANCH = main-townba
 GLKTERM_SOURCE = glkterm-$(GLKTERM_BRANCH).tar.gz
-GLKTERM_SITE = https://github.com/$(GLKTERM_VERSION)/glkterm/archive/refs/heads/$(GLKTERM_BRANCH).tar.gz
+GLKTERM_SITE = https://github.com/townba/glkterm/archive/refs/heads/$(GLKTERM_BRANCH).tar.gz
 GLKTERM_LICENSE = MIT
 GLKTERM_LICENSE_FILES = LICENSE
 GLKTERM_DEPENDENCIES = host-pkgconf ncurses zlib \

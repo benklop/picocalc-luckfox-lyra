@@ -1,0 +1,7 @@
+config BR2_PACKAGE_PERL_EXPECT
+	bool "perl-expect"
+	depends on BR2_PACKAGE_PERL
+	help
+	  Expect for Perl - Automate interactive programs.
+	  
+	  https://metacpan.org/pod/Expect

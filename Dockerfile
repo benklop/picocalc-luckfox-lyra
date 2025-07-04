@@ -97,6 +97,7 @@ RUN apt-get update && apt-get install -y \
     texinfo \
     unzip \
     util-linux \
+    vim \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configure the required python2 environment

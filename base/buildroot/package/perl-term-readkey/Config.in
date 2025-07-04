@@ -1,0 +1,9 @@
+config BR2_PACKAGE_PERL_TERM_READKEY
+	bool "perl-term-readkey"
+	depends on BR2_PACKAGE_PERL
+	select BR2_PACKAGE_HOST_QEMU
+	select BR2_PACKAGE_HOST_QEMU_USER_MODE
+	help
+	  A perl module for simple terminal control.
+	  
+	  https://metacpan.org/pod/Term::ReadKey

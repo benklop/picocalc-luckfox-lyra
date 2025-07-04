@@ -81,6 +81,11 @@ DOCKER_ENV=(
     "-e" "CCACHE_DIR=/root/.ccache"
 )
 
+# Create output directory for build artifacts
+mkdir -p "$(pwd)/output"
+mkdir -p "$(pwd)/.ccache"
+mkdir -p "$(pwd)/buildroot-output"
+
 # Run the container
 docker run -it --rm --name "$CONTAINER_NAME" \
     "${DOCKER_VOLUMES[@]}" \

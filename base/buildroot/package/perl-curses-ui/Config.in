@@ -1,0 +1,8 @@
+config BR2_PACKAGE_PERL_CURSES_UI
+	bool "perl-curses-ui"
+	depends on BR2_PACKAGE_PERL
+	select BR2_PACKAGE_PERL_CURSES
+	help
+	  A curses based OO user interface framework for Perl.
+	  
+	  https://metacpan.org/pod/Curses::UI

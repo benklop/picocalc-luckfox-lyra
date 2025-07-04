@@ -1,0 +1,8 @@
+config BR2_PACKAGE_PERL_CURSES
+	bool "perl-curses"
+	depends on BR2_PACKAGE_PERL
+	select BR2_PACKAGE_NCURSES
+	help
+	  Perl bindings for the curses library.
+	  
+	  https://metacpan.org/pod/Curses
