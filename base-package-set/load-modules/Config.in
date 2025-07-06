@@ -1,0 +1,36 @@
+config BR2_PACKAGE_LOAD_MODULES
+	bool "load-modules"
+	help
+	  Module auto-loading infrastructure for init scripts.
+	  
+	  Provides a system for automatically loading kernel modules
+	  during boot based on configuration in /etc/sysconfig/modules.
+	  
+	  Includes:
+	  - S02modules init script for automatic module loading
+	  - /etc/sysconfig/functions library for boot messaging
+	  - /etc/sysconfig/modules configuration file
+
+if BR2_PACKAGE_LOAD_MODULES
+
+config BR2_PACKAGE_LOAD_MODULES_LIST
+	string "List of modules to load at boot"
+	default ""
+	help
+	  Space-separated list of kernel modules to load at boot time.
+	  Each module name will be placed on a separate line in the
+	  modules file. Module parameters are not supported in this
+	  configuration - use the modules file directly for complex
+	  module configurations.
+	  
+	  Examples:
+	  - "rtl8188fu snd-soc-dummy"
+	  - "rtl8188fu snd-soc-dummy i2c-dev"
+	  
+	  For modules with parameters, leave this empty and manually
+	  configure /etc/sysconfig/modules on the target system.
+	  
+	  Leave empty to create an empty modules file that can be
+	  manually configured later.
+
+endif

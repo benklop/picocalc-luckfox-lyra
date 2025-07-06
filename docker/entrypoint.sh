@@ -3,7 +3,7 @@
 # Apply additional package set if provided
 apply_package_set() {
     local package_set_path="$1"
-    local sdk_path="/opt/Lyra-SDK"
+    local buildroot_package_path="/opt/Lyra-SDK/buildroot/package"
     
     echo "Applying package set from: $package_set_path"
     
@@ -22,7 +22,7 @@ apply_package_set() {
             
             if [ -f "$target_path" ]; then
                 echo "Applying patch: $patch_file -> $target_path"
-                if patch -p1 -d "$dst_dir" < "$patch_file"; then
+                if patch -p3 -d "$dst_dir" < "$patch_file"; then
                     echo "  ✓ Patch applied successfully"
                 else
                     echo "  ✗ Failed to apply patch"
@@ -47,12 +47,12 @@ apply_package_set() {
     }
     
     # Copy files (excluding .patch files) and then apply patches
-    echo "Copying package set files from $package_set_path to $sdk_path..."
-    copy_files "$package_set_path" "$sdk_path"
-    
+    echo "Copying package set files from $package_set_path to $buildroot_package_path..."
+    copy_files "$package_set_path" "$buildroot_package_path"
+
     echo "Applying package set patches..."
-    apply_patches "$package_set_path" "$sdk_path"
-    
+    apply_patches "$package_set_path" "$buildroot_package_path"
+
     echo "Package set applied successfully"
 }
 

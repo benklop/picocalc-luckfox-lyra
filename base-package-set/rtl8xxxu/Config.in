@@ -1,0 +1,26 @@
+config BR2_PACKAGE_RTL8XXXU
+	bool "rtl8xxxu"
+	depends on !BR2_s390x
+	depends on BR2_LINUX_KERNEL
+	help
+	  Driver for Realtek 802.11n USB wireless chips, backported from 
+	  the Linux mainline kernel with additional improvements and bug fixes.
+	  
+	  Supported chips include:
+	  - RTL8188CU/CUS/CTV, RTL8188EU/EUS/ETV, RTL8188FU/FTV
+	  - RTL8188GU, RTL8188RU, RTL8191CU, RTL8192CU
+	  - RTL8192EU, RTL8192FU, RTL8723AU, RTL8723BU
+	  
+	  This driver provides better compatibility and performance compared 
+	  to the standard rtl8xxxu driver included in the kernel, with 
+	  support for more recent chipsets and additional features.
+	  
+	  Note: Some RTL8188GU and RTL8192FU adapters may start in "Driver 
+	  CDROM Mode" and need to be switched to "Wi-Fi Mode" using 
+	  usb_modeswitch or the eject command.
+	  
+	  https://github.com/a5a5aa555oo/rtl8xxxu
+
+comment "rtl8xxxu needs a Linux kernel to be built"
+	depends on !BR2_s390x
+	depends on !BR2_LINUX_KERNEL

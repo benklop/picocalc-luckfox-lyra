@@ -41,6 +41,12 @@ This document tracks known issues, work-in-progress features, and planned improv
 - [ ] **Driver debugging** - Investigate why WiFi doesn't work
 - [ ] **Kernel config validation** - Ensure all required options enabled
 
+### Perl Packages for Ceni
+- [x] ✅ **perl-term-readkey** - Cross-compilation fixes implemented
+- [x] ✅ **perl-io-tty** - Added missing dependency for IO::Pty functionality
+- [x] ✅ **perl-curses-ui** - User interface library for Ceni
+- [x] ✅ **perl-expect** - Terminal automation library
+
 ### Audio Packages
 - [ ] **ALSA utilities** - Add alsa-utils package for audio debugging
 - [ ] **Audio testing tools** - Add speaker-test, aplay utilities

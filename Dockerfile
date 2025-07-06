@@ -107,8 +107,10 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python2 1 \
 
 COPY --from=unpacker /opt/Lyra-SDK /opt/Lyra-SDK
 COPY ./docker/entrypoint.sh /opt/Lyra-SDK/entrypoint.sh
+COPY ./docker/prepare.sh /opt/Lyra-SDK/prepare.sh
+COPY base /opt/Lyra-SDK/base
 
-RUN cd /opt/Lyra-SDK/customizations && \
+RUN cd /opt/Lyra-SDK && \
     ./prepare.sh
 
 WORKDIR /opt/Lyra-SDK

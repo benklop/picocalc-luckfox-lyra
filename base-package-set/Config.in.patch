@@ -23,17 +23,18 @@
  	source "package/rs485conf/Config.in"
  	source "package/rtc-tools/Config.in"
  	source "package/rtl8188eu/Config.in"
-+	source "package/rtl8188fu/Config.in"
++	source "package/rtl8xxxu/Config.in"
  	source "package/rtl8189es/Config.in"
  	source "package/rtl8189fs/Config.in"
  	source "package/rtl8192eu/Config.in"
-@@ -959,6 +959,10 @@
+@@ -959,6 +959,11 @@
  	source "package/perl-xml-namespacesupport/Config.in"
  	source "package/perl-xml-sax/Config.in"
  	source "package/perl-xml-sax-base/Config.in"
 +	source "package/perl-curses/Config.in"
 +	source "package/perl-curses-ui/Config.in"
 +	source "package/perl-expect/Config.in"
++	source "package/perl-io-tty/Config.in"
 +	source "package/perl-term-readkey/Config.in"
  endmenu
  endif
@@ -54,7 +55,7 @@
  	source "package/python-tabledata/Config.in"
  	source "package/python-tcolorpy/Config.in"
  	source "package/python-tempora/Config.in"
-@@ -2891,4 +2894,21 @@
+@@ -2891,4 +2894,22 @@
  	source "package/vim/Config.in"
  endmenu
  
@@ -73,6 +74,7 @@
 +        source "package/fcitx/Config.in"
 +        source "package/fcitx-fbterm/Config.in"
 +        source "package/extra-cmake-modules/Config.in"
++        source "package/load-modules/Config.in"
 +endmenu
 +
  endmenu

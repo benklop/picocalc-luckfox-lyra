@@ -1,0 +1,10 @@
+config BR2_PACKAGE_PERL_IO_TTY
+	bool "perl-io-tty"
+	help
+	  Interface to Unix tty ioctls (Pseudo-TTY pty forking).
+
+	  This provides an interface to the POSIX functions setsid(),
+	  setpgid(), tcgetpgrp(), tcsetpgrp(), and to the BSD functions
+	  getpt(), openpty(), forkpty(), ptsname() and the like.
+
+	  https://metacpan.org/pod/IO::Tty

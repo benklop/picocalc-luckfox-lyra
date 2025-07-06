@@ -1,0 +1,16 @@
+# Module auto-loading configuration
+# 
+# This file contains a list of kernel modules to load at boot time.
+# One module per line, with optional arguments.
+# Lines starting with # are comments and are ignored.
+# Empty lines are also ignored.
+#
+# Examples:
+# rtl8188fu
+# snd-soc-dummy
+# i2c-dev
+# spi-dev
+#
+# Note: Module names should not include the .ko extension.
+# Arguments can be provided after the module name, separated by spaces.
+# Example: module_name param1=value1 param2=value2

@@ -7,8 +7,8 @@
 set -e
 
 # Default flash type and options
-FLASH_TYPE="${1:-update}"
 AUTO_YES=false
+UPDATE_IMG="output/firmware/update.img"
 
 # Colors for output
 RED='\033[0;31m'
@@ -130,47 +130,74 @@ check_usb_permissions() {
 check_prerequisites() {
     echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
     
-    # Check if rkflash.sh exists
-    if [ ! -f "scripts/rkflash.sh" ]; then
-        echo -e "${RED}❌ Error: scripts/rkflash.sh not found${NC}"
-        echo "Make sure you're running this from the project root directory"
-        exit 1
+    # Check if we're using direct file flashing or rkflash.sh
+    if [ "$FLASH_TYPE" = "file" ]; then
+        # Direct flashing mode - check upgrade_tool and specified file
+        if [ ! -f "output/upgrade_tool" ]; then
+            echo -e "${RED}❌ Error: output/upgrade_tool not found${NC}"
+            echo "Please build the firmware first using: ./build.sh"
+            exit 1
+        fi
+        
+        if [ ! -f "$UPDATE_IMG" ]; then
+            echo -e "${RED}❌ Error: Specified image file '$UPDATE_IMG' not found${NC}"
+            echo "Please check the path to your image file"
+            exit 1
+        fi
+        
+        echo -e "${GREEN}✅ Prerequisites check passed${NC}"
+        echo "   • upgrade_tool found"
+        echo "   • Image file exists: $UPDATE_IMG ($(du -h "$UPDATE_IMG" | cut -f1))"
+        echo
+    else
+        # Using rkflash.sh wrapper
+        if [ ! -f "scripts/rkflash.sh" ]; then
+            echo -e "${RED}❌ Error: scripts/rkflash.sh not found${NC}"
+            echo "Make sure you're running this from the project root directory"
+            exit 1
+        fi
+        
+        # Check if output directory exists
+        if [ ! -d "output" ]; then
+            echo -e "${RED}❌ Error: output directory not found${NC}"
+            echo "Please build the firmware first using: ./build.sh"
+            exit 1
+        fi
+        
+        # Check if update image exists
+        if [ ! -f "$UPDATE_IMG" ]; then
+            echo -e "${RED}❌ Error: $UPDATE_IMG not found${NC}"
+            echo "Please build the firmware first using: ./build.sh"
+            exit 1
+        fi
+        
+        echo -e "${GREEN}✅ Prerequisites check passed${NC}"
+        echo "   • rkflash.sh found"
+        echo "   • Output directory exists"
+        echo "   • Update image exists ($(du -h "$UPDATE_IMG" | cut -f1))"
+        echo
     fi
     
-    # Check if output directory exists
-    if [ ! -d "output" ]; then
-        echo -e "${RED}❌ Error: output directory not found${NC}"
-        echo "Please build the firmware first using: ./build.sh"
-        exit 1
-    fi
-    
-    # Check if update image exists
-    UPDATE_IMG="output/firmware/update.img"
-    if [ ! -f "$UPDATE_IMG" ]; then
-        echo -e "${RED}❌ Error: $UPDATE_IMG not found${NC}"
-        echo "Please build the firmware first using: ./build.sh"
-        exit 1
-    fi
-    
-    echo -e "${GREEN}✅ Prerequisites check passed${NC}"
-    echo "   • rkflash.sh found"
-    echo "   • Output directory exists"
-    echo "   • Update image exists ($(du -h "$UPDATE_IMG" | cut -f1))"
-    echo
-    
-    # Check USB permissions
+    # Check USB permissions for both methods
     check_usb_permissions
 }
 
 confirm_flash() {
+    local flash_method_desc
+    if [ "$FLASH_TYPE" = "file" ]; then
+        flash_method_desc="custom image file: $(basename "$UPDATE_IMG")"
+    else
+        flash_method_desc="'$FLASH_TYPE' image"
+    fi
+    
     if [ "$AUTO_YES" = true ]; then
-        echo -e "${YELLOW}⚡ Auto-flashing '$FLASH_TYPE' image (--yes mode)${NC}"
+        echo -e "${YELLOW}⚡ Auto-flashing $flash_method_desc (--yes mode)${NC}"
         echo -e "${RED}⚠️  WARNING: This will overwrite the firmware on your PicoCalc!${NC}"
         echo
         return
     fi
     
-    echo -e "${YELLOW}⚡ Ready to flash '$FLASH_TYPE' image${NC}"
+    echo -e "${YELLOW}⚡ Ready to flash $flash_method_desc${NC}"
     echo
     echo -e "${RED}⚠️  WARNING: This will overwrite the firmware on your PicoCalc!${NC}"
     echo
@@ -189,19 +216,29 @@ flash_device() {
     echo -e "${YELLOW}Make sure your PicoCalc is in loader mode and connected via USB-C!${NC}"
     echo
     
-    if [ "$AUTO_YES" = false ]; then
-        read -p "Press Enter when ready to flash, or Ctrl+C to cancel..."
-        echo
-    fi
-    
-    # Change to project directory to ensure rkflash.sh can find relative paths
+    # Change to project directory to ensure paths work correctly
     cd "$(dirname "$0")"
     
-    echo -e "${GREEN}Executing: ./scripts/rkflash.sh $FLASH_TYPE${NC}"
-    echo
+    local flash_success=false
     
-    # Run the actual flash command
-    if ./scripts/rkflash.sh "$FLASH_TYPE"; then
+    if [ "$FLASH_TYPE" = "file" ]; then
+        # Direct flashing with upgrade_tool
+        echo -e "${GREEN}Flashing user-specified image: $UPDATE_IMG${NC}"
+        echo
+        if output/upgrade_tool uf "$UPDATE_IMG"; then
+            flash_success=true
+        fi
+    else
+        # Using rkflash.sh wrapper script
+        echo -e "${GREEN}Executing: ./scripts/rkflash.sh $FLASH_TYPE${NC}"
+        echo
+        if ./scripts/rkflash.sh "$FLASH_TYPE"; then
+            flash_success=true
+        fi
+    fi
+    
+    # Handle results
+    if [ "$flash_success" = true ]; then
         echo
         echo -e "${GREEN}✅ Flash completed successfully!${NC}"
         echo
@@ -227,19 +264,22 @@ show_usage() {
     echo "Usage: $0 [options] [flash_type]"
     echo
     echo "Options:"
-    echo "  -y, --yes     Skip confirmation prompts and flash automatically"
-    echo "  -h, --help    Show this help message"
+    echo "  -y, --yes        Skip confirmation prompts and flash automatically"
+    echo "  -f, --file FILE  Flash a specific image file directly with upgrade_tool"
+    echo "  -h, --help       Show this help message"
     echo
-    echo "Flash types:"
+    echo "Flash types (when not using --file):"
     echo "  update    - Flash complete update image (default)"
     echo "  recovery  - Flash recovery image"
     echo "  firmware  - Flash firmware only"
     echo
     echo "Examples:"
-    echo "  $0              # Flash update image with prompts"
-    echo "  $0 -y           # Flash update image automatically"
-    echo "  $0 -y update    # Flash update image automatically"
-    echo "  $0 recovery     # Flash recovery image with prompts"
+    echo "  $0                        # Flash update image with prompts"
+    echo "  $0 -y                     # Flash update image automatically"
+    echo "  $0 -y update              # Flash update image automatically"
+    echo "  $0 recovery               # Flash recovery image with prompts"
+    echo "  $0 -f custom.img          # Flash custom image file directly"
+    echo "  $0 -y -f custom.img       # Flash custom image file automatically"
     echo
 }
 
@@ -255,6 +295,18 @@ main() {
             -h|--help)
                 show_usage
                 exit 0
+                ;;
+            -f|--file)
+                FLASH_TYPE='file'
+                shift
+                if [[ $# -gt 0 && ! $1 =~ ^- ]]; then
+                    UPDATE_IMG="$1"
+                    shift
+                else
+                    echo -e "${RED}Error: No update image specified after --file option${NC}"
+                    show_usage
+                    exit 1
+                fi
                 ;;
             -*)
                 echo -e "${RED}Error: Unknown option '$1'${NC}"
