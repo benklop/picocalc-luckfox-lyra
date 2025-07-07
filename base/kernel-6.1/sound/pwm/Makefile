@@ -3,4 +3,4 @@
 #
 
 obj-$(CONFIG_SOFTPWM_SOUND) += picocalc-softpwm.o
-obj-$(CONFIG_HW_PWM_SOUND) += picocalc-hwpwm.o
+obj-$(CONFIG_PICOCALC_SOUND) += picocalc-hwpwm.o

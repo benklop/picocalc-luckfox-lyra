@@ -14,7 +14,7 @@ config SOFTPWM_SOUND
 	help
 	  Support for sound devices connected via the MCU Soft PWM.
 
-config HW_PWM_SOUND
+config PICOCALC_SOUND
 	bool "PicoCalc Hardware PWM Sound driver"
 	select SND_PCM
 	help
