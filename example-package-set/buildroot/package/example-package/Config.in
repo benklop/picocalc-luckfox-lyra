@@ -1,7 +1,7 @@
 config BR2_PACKAGE_EXAMPLE_PACKAGE
 	bool "example-package"
 	help
-	  An example package to demonstrate package set functionality.
+	  An example package to demonstrate overlay functionality.
 	  
 	  This package installs a simple example script.
 	  

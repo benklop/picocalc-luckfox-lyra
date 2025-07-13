@@ -225,14 +225,14 @@ flash_device() {
         # Direct flashing with upgrade_tool
         echo -e "${GREEN}Flashing user-specified image: $UPDATE_IMG${NC}"
         echo
-        if output/upgrade_tool uf "$UPDATE_IMG"; then
+        if ./SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool uf "$UPDATE_IMG"; then
             flash_success=true
         fi
     else
         # Using rkflash.sh wrapper script
-        echo -e "${GREEN}Executing: ./scripts/rkflash.sh $FLASH_TYPE${NC}"
+        echo -e "${GREEN}Executing: ./SDK/rkflash.sh $FLASH_TYPE${NC}"
         echo
-        if ./scripts/rkflash.sh "$FLASH_TYPE"; then
+        if ./SDK/rkflash.sh "$FLASH_TYPE"; then
             flash_success=true
         fi
     fi

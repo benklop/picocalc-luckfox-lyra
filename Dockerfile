@@ -1,33 +1,6 @@
 # Use Ubuntu 22.04 as the base image
 FROM ubuntu:22.04 as unpacker
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    python-is-python3 \
-    python2 \
-    tar \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python2 1 \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3 2 \
-    && update-alternatives --set python /usr/bin/python2
-
-# Latest Luckfox Lyra SDK:
-# Remove .repo, rtos, and .git directories to reduce image size.
-# All together this reduces the size by around 7 GB.
-RUN mkdir -p /opt/Lyra-SDK
-COPY Luckfox_Lyra_SDK.tar.gz /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
-RUN tar -xzf /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz -C /opt/Lyra-SDK
-RUN rm /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
-RUN mkdir -p /opt/Lyra-SDK/output /opt/Lyra-SDK/buildroot/output
-WORKDIR /opt/Lyra-SDK
-RUN ./.repo/repo/repo sync -l
-RUN rm -rf .repo && \
-    find . -type d -name ".git" -exec rm -rf {} +
-
-FROM ubuntu:22.04 as builder
-
 # Set environment variables to avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 # Configure ccache for root user
@@ -43,7 +16,6 @@ ENV PATH="/usr/lib/ccache:$PATH"
 # Use half of available cores to leave plenty of headroom for nested builds
 ENV MAKEFLAGS="-j$(($(nproc) / 2))"
 ENV NINJA_STATUS="[%f/%t] "
-
 
 # Update and install required dependencies
 RUN apt-get update && apt-get install -y \
@@ -91,9 +63,11 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     python-is-python3 \
     python2 \
+    python3-pip \
     qemu-user-static \
     rsync \
     ssh \
+    tar \
     texinfo \
     unzip \
     util-linux \
@@ -105,15 +79,14 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python2 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3 2 \
     && update-alternatives --set python /usr/bin/python2
 
-COPY --from=unpacker /opt/Lyra-SDK /opt/Lyra-SDK
-COPY ./docker/entrypoint.sh /opt/Lyra-SDK/entrypoint.sh
-COPY ./docker/prepare.sh /opt/Lyra-SDK/prepare.sh
-COPY base /opt/Lyra-SDK/base
+# Install gdown for downloading the SDK from Google Drive
+RUN pip3 install gdown
 
-RUN cd /opt/Lyra-SDK && \
-    ./prepare.sh
+RUN mkdir -p /opt/Lyra-SDK
+
+COPY ./docker/entrypoint.sh /entrypoint.sh
 
 WORKDIR /opt/Lyra-SDK
 
 # Set the entrypoint
-ENTRYPOINT ["/opt/Lyra-SDK/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

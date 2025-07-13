@@ -1,10 +1,10 @@
-# Base Package Set for PicoCalc Lyra
+# Base Overlay for PicoCalc Lyra
 
 This directory contains the base set of custom Buildroot packages for the PicoCalc Lyra project.
 
 ## Contents
 
-This package set includes:
+This overlay includes:
 
 - Custom packages required for the PicoCalc Lyra hardware
 - Perl packages with cross-compilation fixes
@@ -12,7 +12,7 @@ This package set includes:
 
 ## Usage
 
-This package set is applied by default when using the build system. It can be excluded using the `--no-base-packages` option if you want to build with only custom package sets.
+This overlay is applied by default when using the build system. It can be excluded using the `--no-base-packages` option if you want to build with only custom overlays.
 
 ## Structure
 

@@ -88,7 +88,7 @@ This document tracks known issues, work-in-progress features, and planned improv
 
 ### Build Testing
 - [ ] **Clean build validation** - Test complete clean builds
-- [ ] **Package set testing** - Validate package set overlay system
+- [ ] **Overlay testing** - Validate overlay overlay system
 - [ ] **Cross-platform testing** - Test on different Linux distributions
 
 ## 🔌 Power Management Integration

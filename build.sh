@@ -8,34 +8,34 @@
 usage() {
     echo "Usage: $0 [OPTIONS] [BUILD_ARGS...]"
     echo "Options:"
-    echo "  --package-set PATH    Apply buildroot package set from PATH (can be used multiple times)"
-    echo "  --no-base-packages    Skip applying the base package set"
+    echo "  --overlay PATH    Apply buildroot overlay from PATH (can be used multiple times)"
+    echo "  --no-base-packages    Skip applying the base overlay"
     echo "  --help               Show this help message"
     echo ""
-    echo "Package sets are applied in the order specified. The base package set"
-    echo "(base-package-set) is applied first by default unless --no-base-packages is used."
+    echo "Overlays are applied in the order specified. The base overlay"
+    echo "(base-overlay) is applied first by default unless --no-base-packages is used."
     echo ""
     echo "Examples:"
     echo "  $0 all                                    # Standard build with base packages"
-    echo "  $0 --package-set ./extra-pkgs all        # Base + additional packages"
-    echo "  $0 --no-base-packages --package-set ./custom all  # Only custom packages"
-    echo "  $0 --package-set ./set1 --package-set ./set2 all  # Base + set1 + set2"
+    echo "  $0 --overlay ./extra-pkgs all        # Base + additional packages"
+    echo "  $0 --no-base-packages --overlay ./custom all  # Only custom packages"
+    echo "  $0 --overlay ./set1 --overlay ./set2 all  # Base + set1 + set2"
     exit 1
 }
 
 # Parse command line arguments
-PACKAGE_SET_PATHS=()
+OVERLAY_PATHS=()
 APPLY_BASE_PACKAGES=true
 BUILD_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --package-set)
+        --overlay)
             if [[ -n "$2" && "$2" != --* ]]; then
-                PACKAGE_SET_PATHS+=("$2")
+                OVERLAY_PATHS+=("$2")
                 shift 2
             else
-                echo "Error: --package-set requires a path argument"
+                echo "Error: --overlay requires a path argument"
                 exit 1
             fi
             ;;
@@ -57,35 +57,35 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Add base package set if not disabled
+# Add base overlay if not disabled
 if [[ "$APPLY_BASE_PACKAGES" == "true" ]]; then
-    BASE_PACKAGE_SET="$(pwd)/base-package-set"
-    if [[ -d "$BASE_PACKAGE_SET" ]]; then
-        # Prepend base package set to the beginning of the array
-        PACKAGE_SET_PATHS=("$BASE_PACKAGE_SET" "${PACKAGE_SET_PATHS[@]}")
-        echo "Including base package set: $BASE_PACKAGE_SET"
+    BASE_OVERLAY="$(pwd)/base"
+    if [[ -d "$BASE_OVERLAY" ]]; then
+        # Prepend base overlay to the beginning of the array
+        OVERLAY_PATHS=("$BASE_OVERLAY" "${OVERLAY_PATHS[@]}")
+        echo "Including base overlay: $BASE_OVERLAY"
     else
-        echo "Warning: Base package set directory '$BASE_PACKAGE_SET' does not exist"
+        echo "Warning: Base overlay directory '$BASE_OVERLAY' does not exist"
     fi
 fi
 
-# Validate all package set paths
-VALIDATED_PACKAGE_SETS=()
-for PACKAGE_SET_PATH in "${PACKAGE_SET_PATHS[@]}"; do
-    if [[ ! -d "$PACKAGE_SET_PATH" ]]; then
-        echo "Error: Package set directory '$PACKAGE_SET_PATH' does not exist"
+# Validate all overlay paths
+VALIDATED_OVERLAYS=()
+for OVERLAY_PATH in "${OVERLAY_PATHS[@]}"; do
+    if [[ ! -d "$OVERLAY_PATH" ]]; then
+        echo "Error: Overlay directory '$OVERLAY_PATH' does not exist"
         exit 1
     fi
-    PACKAGE_SET_PATH=$(realpath "$PACKAGE_SET_PATH")
-    VALIDATED_PACKAGE_SETS+=("$PACKAGE_SET_PATH")
-    echo "Using package set: $PACKAGE_SET_PATH"
+    OVERLAY_PATH=$(realpath "$OVERLAY_PATH")
+    VALIDATED_OVERLAYS+=("$OVERLAY_PATH")
+    echo "Using overlay: $OVERLAY_PATH"
 done
 
 # Run the Docker container 
 echo "Running build container..."
-echo "Mounted output directory to /opt/Lyra-SDK/output"
-echo "Mounted configs directory to /opt/Lyra-SDK/buildroot/configs"
-echo "Mounted buildroot output directory to /opt/Lyra-SDK/buildroot/output"
+echo "Mounting SDK directory to /opt/Lyra-SDK"
+
+mkdir -p "$(pwd)/SDK"
 
 # Run the container with a name so we can copy files out later
 CONTAINER_NAME="picocalc-lyra-build-$(date +%s)"
@@ -93,23 +93,21 @@ CONTAINER_NAME="picocalc-lyra-build-$(date +%s)"
 # Prepare Docker volume mounts
 DOCKER_VOLUMES=(
     "-v" "$(pwd)/.ccache:/root/.ccache:Z"
-    "-v" "$(pwd)/output:/opt/Lyra-SDK/output:Z"
-    "-v" "$(pwd)/config:/opt/Lyra-SDK/buildroot/configs:Z"
-    "-v" "$(pwd)/buildroot-output:/opt/Lyra-SDK/buildroot/output:Z"
+    "-v" "$(pwd)/SDK:/opt/Lyra-SDK:Z"
 )
 
-# Add package set volumes if specified
-PACKAGE_SET_ARGS=()
-for i in "${!VALIDATED_PACKAGE_SETS[@]}"; do
-    PACKAGE_SET_PATH="${VALIDATED_PACKAGE_SETS[$i]}"
-    PACKAGE_SET_MOUNT="/opt/package-set-$i"
-    DOCKER_VOLUMES+=("-v" "$PACKAGE_SET_PATH:$PACKAGE_SET_MOUNT:Z")
-    PACKAGE_SET_ARGS+=("--package-set" "$PACKAGE_SET_MOUNT")
+# Add overlay volumes if specified
+OVERLAY_ARGS=()
+for i in "${!VALIDATED_OVERLAYS[@]}"; do
+    OVERLAY_PATH="${VALIDATED_OVERLAYS[$i]}"
+    OVERLAY_MOUNT="/opt/overlay-$i"
+    DOCKER_VOLUMES+=("-v" "$OVERLAY_PATH:$OVERLAY_MOUNT:Z")
+    OVERLAY_ARGS+=("--overlay" "$OVERLAY_MOUNT")
 done
 
-# Add the package set flags to the build arguments
-if [[ ${#PACKAGE_SET_ARGS[@]} -gt 0 ]]; then
-    BUILD_ARGS=("${PACKAGE_SET_ARGS[@]}" "${BUILD_ARGS[@]}")
+# Add the overlay flags to the build arguments
+if [[ ${#OVERLAY_ARGS[@]} -gt 0 ]]; then
+    BUILD_ARGS=("${OVERLAY_ARGS[@]}" "${BUILD_ARGS[@]}")
 fi
 
 # Prepare environment variables

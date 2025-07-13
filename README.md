@@ -111,24 +111,24 @@ For detailed flashing instructions, troubleshooting, and hardware setup, see **[
 3. Connect USB-C cable to the **LOWER** USB-C port
 4. Run `./flash.sh` and follow the prompts
 
-## Package Sets
+## Overlays
 
-The build system supports applying additional package sets to extend functionality:
+The build system supports applying additional overlays to extend functionality:
 
 ```bash
 # Build with additional packages
-./build.sh --package-set ./my-packages all
+./build.sh --overlay ./my-packages all
 
-# Build specific configuration with package set
-./build.sh --package-set ./gaming-packages picocalc_luckfox_lyra_buildroot_sdmmc_defconfig
+# Build specific configuration with overlay
+./build.sh --overlay ./gaming-packages picocalc_luckfox_lyra_buildroot_sdmmc_defconfig
 ```
 
-### Creating Package Sets
+### Creating Overlays
 
-Package sets follow the same directory structure as the base SDK:
+Overlays follow the same directory structure as the base SDK:
 
 ```
-my-package-set/
+my-overlay/
 ├── buildroot/
 │   └── package/
 │       ├── my-package/
@@ -144,7 +144,7 @@ my-package-set/
 - Regular files: Copied directly to the SDK
 - `.patch` files: Applied as patches to existing SDK files
 
-See `example-package-set/` for a complete example.
+See `example-overlay/` for a complete example.
 
 ## Customization
 
@@ -155,7 +155,7 @@ To customize the build:
 3. Modify device tree in `src/*.dts`
 4. Adjust Buildroot packages in `src/*defconfig`
 5. Add additional patches or scripts as needed
-6. Create package sets for reusable modifications
+6. Create overlays for reusable modifications
 
 ## Development and Debugging
 

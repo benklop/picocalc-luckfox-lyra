@@ -1,11 +1,63 @@
 #!/bin/bash
 
-# Apply additional package set if provided
-apply_package_set() {
-    local package_set_path="$1"
-    local buildroot_package_path="/opt/Lyra-SDK/buildroot/package"
+unpack_sdk() {
+    echo "Checking if SDK is already unpacked..."
+    if [ -f /opt/Lyra-SDK/.sdk_initialized ]; then
+        echo "SDK is already unpacked and initialized."
+        return 0
+    fi
+    echo "SDK not unpacked, Retrieving..."
+
+    # URL found at https://wiki.luckfox.com/Luckfox-Lyra/Download
+    SDK_URL=https://drive.google.com/file/d/1bQrszU23AyFWGS9-mnIetGobsmtvg13W/view?usp=drive_link
+
+
+    # Downloading the SDK
+    if [ -f /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz ]; then
+        echo "Luckfox_Lyra_SDK.tar.gz already exists, skipping download."
+    else
+        echo "Downloading the SDK from: $SDK_URL"
+        gdown --fuzzy $SDK_URL -O /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
+    fi
+
+    local sdk_tarball_path="/opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz"
     
-    echo "Applying package set from: $package_set_path"
+    if [ ! -f "$sdk_tarball_path" ]; then
+        echo "Error: SDK tarball not found at $sdk_tarball_path"
+        exit 1
+    fi
+
+    echo "Unpacking SDK from $sdk_tarball_path..."
+    
+    # Extract the SDK tarball
+    tar -xzf "$sdk_tarball_path" -C /opt/Lyra-SDK
+
+    echo "SDK unpacked successfully"
+
+    # Remove the tarball to save space
+    echo "Cleaning up SDK tarball..."
+    rm -f "$sdk_tarball_path"
+
+    echo "Initializing SDK..."
+    pushd /opt/Lyra-SDK || exit 1
+        ./.repo/repo/repo sync -l
+
+        # Fix issue with running build in docker - the SDK has a whitelist of filesystems
+        # but it doesn't recognize overlayfs which is used by docker.
+        echo "Patching SDK to support overlayfs..."
+        sed -i 's/btrfs/btrfs | overlay/' device/rockchip/common/scripts/check-sdk.sh
+
+        echo "SDK initialized successfully"
+        touch /opt/Lyra-SDK/.sdk_initialized
+    popd || exit 1
+}
+
+# Apply additional overlay if provided
+apply_overlay() {
+    local overlay_path="$1"
+    local sdk_path="/opt/Lyra-SDK"
+    
+    echo "Applying overlay from: $overlay_path"
     
     # Function to apply patches with .patch extension
     apply_patches() {
@@ -21,15 +73,33 @@ apply_package_set() {
             local target_path="$dst_dir/$target_file"
             
             if [ -f "$target_path" ]; then
-                echo "Applying patch: $patch_file -> $target_path"
-                if patch -p3 -d "$dst_dir" < "$patch_file"; then
-                    echo "  ✓ Patch applied successfully"
+                # First check if patch is already applied using --dry-run and --reverse
+                echo "Checking patch: $patch_file -> $target_path"
+                if patch --dry-run --reverse -f -p1 -d "$dst_dir" < "$patch_file" >/dev/null 2>&1; then
+                    echo "  ⚠ Patch already applied, skipping"
                 else
-                    echo "  ✗ Failed to apply patch"
-                    exit 1
+                    # Patch not applied, try to apply it
+                    echo "Applying patch: $patch_file -> $target_path"
+                    if patch -N -f -p1 -d "$dst_dir" < "$patch_file"; then
+                        echo "  ✓ Patch applied successfully"
+                    else
+                        patch_exit_code=$?
+                        echo "  ✗ Failed to apply patch (exit code: $patch_exit_code)"
+                        exit 1
+                    fi
                 fi
             else
-                echo "Warning: Target file $target_path does not exist for patch $patch_file"
+                # Get the filename without path
+                local patch_filename="$(basename "$patch_file")"
+                
+                # Check if patch filename starts with leading zeroes (buildroot package patch)
+                if [[ "$patch_filename" =~ ^[0-9] ]]; then
+                    # Suppress warning for buildroot package patches
+                    echo "  ℹ Buildroot package patch: $patch_filename"
+                else
+                    echo "Warning: Target file $target_path does not exist for patch $patch_file"
+                fi
+                
                 # Copy the patch file to the corresponding location in the destination directory
                 mkdir -p "$(dirname "$target_path")"
                 cp "$patch_file" "$target_path.patch"
@@ -47,80 +117,29 @@ apply_package_set() {
     }
     
     # Copy files (excluding .patch files) and then apply patches
-    echo "Copying package set files from $package_set_path to $buildroot_package_path..."
-    copy_files "$package_set_path" "$buildroot_package_path"
+    echo "Copying overlay files from $overlay_path to $sdk_path..."
+    copy_files "$overlay_path" "$sdk_path"
 
-    echo "Applying package set patches..."
-    apply_patches "$package_set_path" "$buildroot_package_path"
+    echo "Applying overlay patches..."
+    apply_patches "$overlay_path" "$sdk_path"
 
-    echo "Package set applied successfully"
+    echo "Overlay applied successfully"
 }
 
-# Function to resolve symlinks in firmware directory
-resolve_firmware_symlinks() {
-    local firmware_dir="/opt/Lyra-SDK/output/firmware"
-    
-    if [ ! -d "$firmware_dir" ]; then
-        echo "No firmware directory found at $firmware_dir"
-        return 0
-    fi
-    
-    echo "Resolving symlinks in firmware directory..."
-    
-    # Find all symlinks in the firmware directory and resolve them
-    find "$firmware_dir" -type l | while read -r symlink; do
-        local filename=$(basename "$symlink")
-        
-        # Skip if the symlink target doesn't exist
-        if [ ! -e "$symlink" ]; then
-            echo "  Skipping $filename (target not found)"
-            continue
-        fi
-        
-        echo "  Resolving $filename"
-        # Copy the target file to a temporary location, then move it to replace the symlink
-        cp -L "$symlink" "$symlink.tmp" && mv "$symlink.tmp" "$symlink"
-    done
-    
-    echo "Firmware symlinks resolved"
-}
+unpack_sdk
 
-copy_upgrade_utility() {
-    local upgrade_utility_path="/opt/Lyra-SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool"
-    
-    if [ -f "$upgrade_utility_path" ]; then
-        echo "Copying upgrade utility to output directory..."
-        cp "$upgrade_utility_path" /opt/Lyra-SDK/output/
-        echo "Upgrade utility copied successfully"
-    else
-        echo "Warning: Upgrade utility not found at $upgrade_utility_path"
-    fi
-}
-
-copy_misc_files() {
-    local kconfig_path="/opt/Lyra-SDK/kernel/.config"
-
-    if [ -f "$kconfig_path" ]; then
-        echo "Copying kernel config to output directory..."
-        cp "$kconfig_path" /opt/Lyra-SDK/output/kernel-config
-        echo "Kernel config copied successfully"
-    else
-        echo "Warning: Kernel config not found at $kconfig_path"
-    fi
-}
-
-# Parse command line arguments to extract package set information
-PACKAGE_SET_PATHS=()
+# Parse command line arguments to extract overlay information
+OVERLAY_PATHS=()
 FILTERED_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --package-set)
+        --overlay)
             if [[ -n "$2" && "$2" != --* ]]; then
-                PACKAGE_SET_PATHS+=("$2")
+                OVERLAY_PATHS+=("$2")
                 shift 2
             else
-                echo "Error: --package-set requires a path argument"
+                echo "Error: --overlay requires a path argument"
                 exit 1
             fi
             ;;
@@ -131,13 +150,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Apply all package sets in order
-for PACKAGE_SET_PATH in "${PACKAGE_SET_PATHS[@]}"; do
-    if [ -d "$PACKAGE_SET_PATH" ]; then
-        apply_package_set "$PACKAGE_SET_PATH"
+# Apply all overlays in order
+for OVERLAY_PATH in "${OVERLAY_PATHS[@]}"; do
+    if [ -d "$OVERLAY_PATH" ]; then
+        apply_overlay "$OVERLAY_PATH"
     else
-        echo "Error: Package set path '$PACKAGE_SET_PATH' does not exist or is not a directory"
-        ls -la "$PACKAGE_SET_PATH" 2>/dev/null || echo "Cannot list contents of $PACKAGE_SET_PATH"
+        echo "Error: Overlay path '$OVERLAY_PATH' does not exist or is not a directory"
+        ls -la "$OVERLAY_PATH" 2>/dev/null || echo "Cannot list contents of $OVERLAY_PATH"
         exit 1
     fi
 done
@@ -147,20 +166,6 @@ if [ ${#FILTERED_ARGS[@]} -gt 0 ]; then
     echo "Running SDK build.sh with arguments: ${FILTERED_ARGS[@]}"
     ./build.sh "${FILTERED_ARGS[@]}"
     EXIT_CODE=$?
-    
-    # After build completes, resolve firmware symlinks so they persist outside the container
-    if [ $EXIT_CODE -eq 0 ]; then
-        resolve_firmware_symlinks
-    fi
-
-    if [ $EXIT_CODE -eq 0 ]; then
-        echo "SDK build completed successfully"
-
-        copy_upgrade_utility
-        copy_misc_files
-    else
-        echo "Error: SDK build failed with exit code $EXIT_CODE"
-    fi
 fi
  
 exit $EXIT_CODE

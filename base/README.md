@@ -1,6 +1,6 @@
-# Base Package Set for PicoCalc Lyra
+# Base Overlay for PicoCalc Lyra
 
-This directory contains the base package set for the PicoCalc Lyra project. It includes:
+This directory contains the base overlay for the PicoCalc Lyra project. It includes:
 
 ## Structure
 
@@ -19,16 +19,16 @@ Various modifications to existing Buildroot packages to support the ARM cross-co
 
 ## Usage
 
-This package set is applied by default when using the build system. To build without it:
+This overlay is applied by default when using the build system. To build without it:
 
 ```bash
 ./build.sh --no-base-packages all
 ```
 
-To build with additional package sets:
+To build with additional overlays:
 
 ```bash
-./build.sh --package-set ./my-extra-packages all
+./build.sh --overlay ./my-extra-packages all
 ```
 
-The base package set will be applied first, followed by any additional package sets in the order specified.
+The base overlay will be applied first, followed by any additional overlays in the order specified.
