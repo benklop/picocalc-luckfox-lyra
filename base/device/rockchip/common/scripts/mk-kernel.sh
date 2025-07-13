@@ -7,7 +7,25 @@ do_make_kernel_config()
 	KERNEL_CONFIGS_DIR="$RK_SDK_DIR/kernel/arch/$RK_KERNEL_ARCH/configs"
 	KERNEL_CFG="$1"
 	shift
-	KERNEL_CFG_FRAGMENTS="$@"
+	
+	# Expand globs and filter out non-existent files
+	KERNEL_CFG_FRAGMENTS=""
+	for fragment in "$@"; do
+		# Check if the fragment contains glob characters
+		if [[ "$fragment" == *"*"* ]] || [[ "$fragment" == *"?"* ]]; then
+			# Expand the glob in the configs directory
+			for expanded_file in "$KERNEL_CONFIGS_DIR"/$fragment; do
+				if [ -f "$expanded_file" ]; then
+					KERNEL_CFG_FRAGMENTS="$KERNEL_CFG_FRAGMENTS $(basename "$expanded_file")"
+				fi
+			done
+		else
+			# Regular fragment, check if it exists
+			if [ -f "$KERNEL_CONFIGS_DIR/$fragment" ]; then
+				KERNEL_CFG_FRAGMENTS="$KERNEL_CFG_FRAGMENTS $fragment"
+			fi
+		fi
+	done
 
 	if [ "$RK_CHIP" = "$RK_CHIP_FAMILY" ]; then
 		POSSIBLE_FRAGMENTS="$RK_CHIP"

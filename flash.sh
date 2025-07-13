@@ -8,7 +8,7 @@ set -e
 
 # Default flash type and options
 AUTO_YES=false
-UPDATE_IMG="output/firmware/update.img"
+UPDATE_IMG="SDK/output/firmware/update.img"
 
 # Colors for output
 RED='\033[0;31m'
@@ -133,8 +133,8 @@ check_prerequisites() {
     # Check if we're using direct file flashing or rkflash.sh
     if [ "$FLASH_TYPE" = "file" ]; then
         # Direct flashing mode - check upgrade_tool and specified file
-        if [ ! -f "output/upgrade_tool" ]; then
-            echo -e "${RED}❌ Error: output/upgrade_tool not found${NC}"
+        if [ ! -f "SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool" ]; then
+            echo -e "${RED}❌ Error: SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool not found${NC}"
             echo "Please build the firmware first using: ./build.sh"
             exit 1
         fi
@@ -151,16 +151,9 @@ check_prerequisites() {
         echo
     else
         # Using rkflash.sh wrapper
-        if [ ! -f "scripts/rkflash.sh" ]; then
-            echo -e "${RED}❌ Error: scripts/rkflash.sh not found${NC}"
+        if [ ! -f "SDK/rkflash.sh" ]; then
+            echo -e "${RED}❌ Error: SDK/rkflash.sh not found${NC}"
             echo "Make sure you're running this from the project root directory"
-            exit 1
-        fi
-        
-        # Check if output directory exists
-        if [ ! -d "output" ]; then
-            echo -e "${RED}❌ Error: output directory not found${NC}"
-            echo "Please build the firmware first using: ./build.sh"
             exit 1
         fi
         

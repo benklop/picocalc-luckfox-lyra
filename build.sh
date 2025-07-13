@@ -85,8 +85,6 @@ done
 echo "Running build container..."
 echo "Mounting SDK directory to /opt/Lyra-SDK"
 
-mkdir -p "$(pwd)/SDK"
-
 # Run the container with a name so we can copy files out later
 CONTAINER_NAME="picocalc-lyra-build-$(date +%s)"
 
@@ -116,9 +114,8 @@ DOCKER_ENV=(
 )
 
 # Create output directory for build artifacts
-mkdir -p "$(pwd)/output"
 mkdir -p "$(pwd)/.ccache"
-mkdir -p "$(pwd)/buildroot-output"
+mkdir -p "$(pwd)/SDK"
 
 # Run the container
 docker run -it --rm --name "$CONTAINER_NAME" \
