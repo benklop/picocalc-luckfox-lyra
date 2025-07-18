@@ -1,41 +1,41 @@
 #!/bin/bash
-# Wrapper script for tar to make --no-same-owner default when running as root
+# Wra        # Check for extract operations
+        if [[ "$arg" =~ ^-[^-]*x ]] || [[ "$arg" == "--extract" ]] || [[ "$arg" == "--get" ]] || [[ "$arg" == "-x" ]]; then
+            IS_EXTRACT=1
+        fi script for tar to make --no-same-owner default when running as root
 # This prevents ownership issues in containerized build environments
 
 # Get the original tar binary path
 TAR_ORIG="$0.orig"
 
-# If running as root and no explicit ownership flags are set, add --no-same-owner
+# Basic logging for troubleshooting (can be disabled by commenting out)
+# echo "tar wrapper: $@" >> /opt/Lyra-SDK/output/sessions/tar-wrapper.log
+
+# If running as root, check if we should add --no-same-owner
 if [ "$(id -u)" = "0" ]; then
-    # Check if any ownership-related flags are already present
-    OWNERSHIP_FLAGS_PRESENT=0
+    # Check arguments for extract operation and existing ownership flags
+    IS_EXTRACT=0
+    HAS_OWNERSHIP_FLAG=0
+    
     for arg in "$@"; do
+        # Check for extract operations
+        if [[ "$arg" =~ ^-[^-]*x || "$arg" == "--extract" || "$arg" == "--get" ]]; then
+            IS_EXTRACT=1
+        fi
+        
+        # Check for existing ownership flags
         case "$arg" in
             --same-owner|--no-same-owner|--same-permissions|--no-same-permissions)
-                OWNERSHIP_FLAGS_PRESENT=1
-                break
+                HAS_OWNERSHIP_FLAG=1
                 ;;
         esac
     done
     
-    # If no ownership flags are present, add --no-same-owner
-    if [ "$OWNERSHIP_FLAGS_PRESENT" = "0" ]; then
-        # Check if this is an extract operation (contains -x or --extract)
-        EXTRACT_OPERATION=0
-        for arg in "$@"; do
-            case "$arg" in
-                -x|--extract|--get|-*x*)
-                    EXTRACT_OPERATION=1
-                    break
-                    ;;
-            esac
-        done
-        
-        if [ "$EXTRACT_OPERATION" = "1" ]; then
-            exec "$TAR_ORIG" --no-same-owner "$@"
-        fi
+    # Add --no-same-owner only for extract operations without existing ownership flags
+    if [ "$IS_EXTRACT" = "1" ] && [ "$HAS_OWNERSHIP_FLAG" = "0" ]; then
+        exec "$TAR_ORIG" --no-same-owner "$@"
     fi
 fi
 
-# Default behavior: just call the original tar
+# Default behavior: just call the original tar with all arguments preserved
 exec "$TAR_ORIG" "$@"
