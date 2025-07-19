@@ -1,8 +1,9 @@
 #!/bin/bash
-# Wra        # Check for extract operations
+# Wrapper script for tar to make --no-same-owner default when running as root
+# Check for extract operations
         if [[ "$arg" =~ ^-[^-]*x ]] || [[ "$arg" == "--extract" ]] || [[ "$arg" == "--get" ]] || [[ "$arg" == "-x" ]]; then
             IS_EXTRACT=1
-        fi script for tar to make --no-same-owner default when running as root
+        fi
 # This prevents ownership issues in containerized build environments
 
 # Get the original tar binary path
