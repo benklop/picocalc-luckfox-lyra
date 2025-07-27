@@ -82,11 +82,16 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python2 1 \
 # Install gdown for downloading the SDK from Google Drive
 RUN pip3 install gdown
 
-RUN mkdir -p /opt/Lyra-SDK
-
-COPY ./docker/entrypoint.sh /entrypoint.sh
+ARG DOCKER_USER=default_user
+ARG DOCKER_USERID=default_userid
 
 WORKDIR /opt/Lyra-SDK
+
+RUN mkdir -p /opt/Lyra-SDK && \
+    useradd -d /opt/Lyra-SDK -u $DOCKER_USERID $DOCKER_USER && \
+    chown $DOCKER_USER:$DOCKER_USER /opt/Lyra-SDK
+
+COPY ./docker/entrypoint.sh /entrypoint.sh
 
 # Set the entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
