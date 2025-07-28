@@ -55,7 +55,7 @@
  	source "package/python-tabledata/Config.in"
  	source "package/python-tcolorpy/Config.in"
  	source "package/python-tempora/Config.in"
-@@ -2891,4 +2894,22 @@
+@@ -2891,4 +2894,21 @@
  	source "package/vim/Config.in"
  endmenu
  
@@ -73,7 +73,6 @@
 +        source "package/fcitx/Config.in"
 +        source "package/fcitx-fbterm/Config.in"
 +        source "package/extra-cmake-modules/Config.in"
-+        source "package/impala/Config.in"
 +        source "package/load-modules/Config.in"
 +endmenu
 +
