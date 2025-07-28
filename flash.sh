@@ -263,8 +263,17 @@ check_erase_prerequisites() {
         exit 1
     fi
     
+    # Check for loader file (required for erase operation)
+    if [ ! -f "SDK/rockdev/MiniLoaderAll.bin" ]; then
+        echo -e "${RED}❌ Error: SDK/rockdev/MiniLoaderAll.bin not found${NC}"
+        echo "The erase operation requires a loader file to be present."
+        echo "Please build the firmware first using: ./build.sh"
+        exit 1
+    fi
+    
     echo -e "${GREEN}✅ Prerequisites check passed${NC}"
     echo "   • rkflash.sh found"
+    echo "   • Loader file exists: SDK/rockdev/MiniLoaderAll.bin"
     echo "   • Erase operation ready"
     echo
     
