@@ -253,6 +253,79 @@ flash_device() {
     fi
 }
 
+check_erase_prerequisites() {
+    echo -e "${BLUE}🔍 Checking erase prerequisites...${NC}"
+    
+    # Using rkflash.sh wrapper
+    if [ ! -f "SDK/rkflash.sh" ]; then
+        echo -e "${RED}❌ Error: SDK/rkflash.sh not found${NC}"
+        echo "Make sure you're running this from the project root directory"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}✅ Prerequisites check passed${NC}"
+    echo "   • rkflash.sh found"
+    echo "   • Erase operation ready"
+    echo
+    
+    # Check USB permissions
+    check_usb_permissions
+}
+
+confirm_erase() {
+    echo -e "${RED}🚨 DANGER: Ready to ERASE FLASH MEMORY${NC}"
+    echo
+    echo -e "${RED}⚠️  CRITICAL WARNING: This will COMPLETELY ERASE all flash memory!${NC}"
+    echo -e "${RED}⚠️  Your device will be unbootable until you flash new firmware!${NC}"
+    echo -e "${RED}⚠️  Make sure you have a way to recover your device!${NC}"
+    echo
+    read -p "Type 'ERASE' in uppercase to confirm this destructive operation: " -r
+    echo
+    if [[ "$REPLY" != "ERASE" ]]; then
+        echo -e "${YELLOW}Erase operation cancelled (confirmation failed)${NC}"
+        exit 0
+    fi
+    echo
+}
+
+erase_device() {
+    echo -e "${RED}🚨 Starting ERASE process...${NC}"
+    echo
+    echo -e "${YELLOW}Make sure your PicoCalc is in loader mode and connected via USB-C!${NC}"
+    echo -e "${RED}⚠️  This will COMPLETELY ERASE the flash memory!${NC}"
+    echo
+    
+    # Change to project directory to ensure paths work correctly
+    cd "$(dirname "$0")"
+    
+    echo -e "${RED}Executing: ./SDK/rkflash.sh erase${NC}"
+    echo
+    
+    if ./SDK/rkflash.sh erase; then
+        echo
+        echo -e "${GREEN}✅ Flash erase completed successfully!${NC}"
+        echo
+        echo -e "${RED}🚨 IMPORTANT: Your device flash has been erased!${NC}"
+        echo -e "${BLUE}📱 Next steps:${NC}"
+        echo "   • The device will NOT boot until you flash new firmware"
+        echo "   • Flash a firmware image using: ./flash.sh update"
+        echo "   • Or flash a custom image using: ./flash.sh -f your_image.img"
+        echo
+    else
+        echo
+        echo -e "${RED}❌ Flash erase failed!${NC}"
+        echo
+        echo -e "${YELLOW}Troubleshooting:${NC}"
+        echo "   • Check USB connection to LOWER USB-C port"
+        echo "   • Verify device is in loader mode"
+        echo "   • Try 'lsusb | grep Rockchip' to see if device is detected"
+        echo "   • Run USB permissions setup: ./scripts/setup_usb_permissions.sh"
+        echo "   • Or try with sudo: sudo ./flash.sh"
+        echo
+        exit 1
+    fi
+}
+
 show_usage() {
     echo "Usage: $0 [options] [flash_type]"
     echo
@@ -265,12 +338,14 @@ show_usage() {
     echo "  update    - Flash complete update image (default)"
     echo "  recovery  - Flash recovery image"
     echo "  firmware  - Flash firmware only"
+    echo "  erase     - Erase the flash memory (WARNING: destructive!)"
     echo
     echo "Examples:"
     echo "  $0                        # Flash update image with prompts"
     echo "  $0 -y                     # Flash update image automatically"
     echo "  $0 -y update              # Flash update image automatically"
     echo "  $0 recovery               # Flash recovery image with prompts"
+    echo "  $0 erase                  # Erase flash memory (with confirmation)"
     echo "  $0 -f custom.img          # Flash custom image file directly"
     echo "  $0 -y -f custom.img       # Flash custom image file automatically"
     echo
@@ -316,6 +391,16 @@ main() {
     # Set default flash type if not specified
     if [ -z "$FLASH_TYPE" ]; then
         FLASH_TYPE="update"
+    fi
+    
+    # Handle erase operation separately
+    if [ "$FLASH_TYPE" = "erase" ]; then
+        print_header
+        print_instructions
+        check_erase_prerequisites
+        confirm_erase
+        erase_device
+        exit 0
     fi
     
     print_header
