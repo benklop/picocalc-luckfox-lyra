@@ -64,6 +64,16 @@ apply_overlay() {
         local src_dir="$1"
         local dst_dir="$2"
         
+        # First, restore any .orig files to ensure clean state
+        echo "Restoring original files from .orig backups..."
+        find "$dst_dir" -name "*.orig" | while read orig_file; do
+            local target_file="${orig_file%.orig}"
+            if [ -f "$orig_file" ]; then
+                echo "  Restoring: $target_file"
+                cp "$orig_file" "$target_file"
+            fi
+        done
+        
         # Find all .patch files in the source directory
         find "$src_dir" -name "*.patch" | while read patch_file; do
             # Get the relative path from the source directory
@@ -73,20 +83,36 @@ apply_overlay() {
             local target_path="$dst_dir/$target_file"
             
             if [ -f "$target_path" ]; then
-                # First check if patch is already applied using --dry-run and --reverse
-                echo "Checking patch: $patch_file -> $target_path"
-                if patch --dry-run --reverse -f -p1 -d "$dst_dir" < "$patch_file" >/dev/null 2>&1; then
-                    echo "  ⚠ Patch already applied, skipping"
+                # Create backup if it doesn't exist
+                if [ ! -f "$target_path.orig" ]; then
+                    echo "Creating backup: $target_path.orig"
+                    cp "$target_path" "$target_path.orig"
+                fi
+                
+                # Apply patch to the original file
+                echo "Applying patch: $patch_file -> $target_path"
+                if patch -N -f -p1 -d "$dst_dir" < "$patch_file"; then
+                    echo "  ✓ Patch applied successfully"
                 else
-                    # Patch not applied, try to apply it
-                    echo "Applying patch: $patch_file -> $target_path"
-                    if patch -N -f -p1 -d "$dst_dir" < "$patch_file"; then
-                        echo "  ✓ Patch applied successfully"
-                    else
-                        patch_exit_code=$?
-                        echo "  ✗ Failed to apply patch (exit code: $patch_exit_code)"
-                        exit 1
+                    patch_exit_code=$?
+                    echo "  ✗ Failed to apply patch (exit code: $patch_exit_code)"
+                    echo ""
+                    echo "ERROR: Patch application failed!"
+                    echo "This may indicate that:"
+                    echo "  • The SDK has already been modified with different patches"
+                    echo "  • The patch format is incompatible"
+                    echo "  • Files have been manually modified"
+                    echo ""
+                    echo "To resolve this issue, you may need to:"
+                    echo "  1. Remove the SDK directory: rm -rf ./SDK"
+                    echo "  2. Re-run the build to download a fresh SDK"
+                    echo ""
+                    # Restore from backup on failure
+                    if [ -f "$target_path.orig" ]; then
+                        echo "Restoring from backup due to patch failure..."
+                        cp "$target_path.orig" "$target_path"
                     fi
+                    exit 1
                 fi
             else
                 # Get the filename without path
@@ -124,6 +150,7 @@ apply_overlay() {
     apply_patches "$overlay_path" "$sdk_path"
 
     echo "Overlay applied successfully"
+    echo "Note: Original files have been backed up with .orig extension"
 }
 
 unpack_sdk
