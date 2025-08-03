@@ -17,6 +17,14 @@ X48NG_DEPENDENCIES = \
   ncurses \
   readline \
   lua
+
+X48NG_MAKE_ENV = \
+  HAS_X11=0 \
+  WITH_X11=no \
+  PKG_CONFIG_SYSROOT_DIR="$(STAGING_DIR)" \
+  PKG_CONFIG_PATH="$(STAGING_DIR)/usr/lib/pkgconfig"
+
+
 # Build flags with explicit include paths
 X48NG_MAKE_OPTS = \
   WITH_X11=no \
@@ -32,11 +40,6 @@ X48NG_MAKE_OPTS = \
 # Build command
 define X48NG_BUILD_CMDS
     $(X48NG_MAKE_ENV) $(MAKE) -C $(@D) $(X48NG_MAKE_OPTS)
-endef
-
-# Install command
-define X48NG_INSTALL_TARGET_CMDS
-    $(X48NG_MAKE_ENV) $(MAKE) -C $(@D) DESTDIR=$(TARGET_DIR) $(X48NG_MAKE_OPTS) install
 endef
 
 $(eval $(generic-package))
