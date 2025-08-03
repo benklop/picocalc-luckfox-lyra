@@ -31,15 +31,27 @@ X48NG_MAKE_OPTS = \
   HAS_X11=0 \
   PREFIX=/usr \
   CC="$(TARGET_CC)" \
-  CFLAGS="$(TARGET_CFLAGS) -mfloat-abi=hard -I$(STAGING_DIR)/usr/include" \
-  LDFLAGS="$(TARGET_LDFLAGS) -mfloat-abi=hard" \
+  CFLAGS="$(TARGET_CFLAGS) -I$(STAGING_DIR)/usr/include" \
+  LDFLAGS="$(TARGET_LDFLAGS)" \
   PKG_CONF_PATH="$(PKG_CONFIG_HOST_BINARY)" \
   PKG_CONFIG_SYSROOT_DIR="$(STAGING_DIR)" \
-  PKG_CONFIG_PATH="$(STAGING_DIR)/usr/lib/pkgconfig" \
+  PKG_CONFIG_PATH="$(STAGING_DIR)/usr/lib/pkgconfig"
 
 # Build command
 define X48NG_BUILD_CMDS
     $(X48NG_MAKE_ENV) $(MAKE) -C $(@D) $(X48NG_MAKE_OPTS)
 endef
 
+# Custom install command
+define X48NG_INSTALL_TARGET_CMDS
+    # Install binary
+    $(INSTALL) -D -m 0755 $(@D)/dist/x48ng $(TARGET_DIR)/usr/bin/x48ng
+    
+    # Install icon
+    $(INSTALL) -D -m 0644 $(@D)/dist/hplogo.png $(TARGET_DIR)/usr/share/x48ng/hplogo.png
+    
+	cp -R $(@D)/dist/ROMs/ $(TARGET_DIR)/usr/share/x48ng/
+	$(INSTALL) -c -m 755 $(@D)/dist/setup-x48ng-home.sh $(TARGET_DIR)/usr/share/x48ng/setup-x48ng-home.sh
+	chmod 755 $(TARGET_DIR)/usr/share/x48ng/setup-x48ng-home.sh
+endef
 $(eval $(generic-package))
