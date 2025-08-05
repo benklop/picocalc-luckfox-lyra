@@ -34,13 +34,12 @@ X48NG_MAKE_OPTS = \
   PREFIX=/usr \
   CC="$(TARGET_CC)" \
   CFLAGS="$(TARGET_CFLAGS) -I$(STAGING_DIR)/usr/include \
-    -g3 -ggdb3 -O0 -rdynamic \
+    -O0 -rdynamic \
     -fno-stack-protector \
     -z execstack \
     -D_FILE_OFFSET_BITS=64 \
     -Wno-absolute-value \
-    -Wno-sign-compare \
-    -Wno-unknown-warning-option" \
+    -Wno-sign-compare"
   LDFLAGS="$(TARGET_LDFLAGS) -mfloat-abi=hard" \
   PKG_CONF_PATH="$(PKG_CONFIG_HOST_BINARY)" \
   PKG_CONFIG_SYSROOT_DIR="$(STAGING_DIR)" \
