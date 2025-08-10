@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-X48NG_VERSION = 43dae7322141627cd1792ef151eaa80884c6c114
-X48NG_SITE = https://github.com/gwenhael-le-moine/x48ng.git
+X48NG_VERSION = 6a6b912e796f259231e1e42c5e3c7e51a37121e7
+X48NG_SITE = https://github.com/hpsaturn/x48ng.git
 X48NG_SITE_METHOD = git
 X48NG_LICENSE = GPL2
 X48NG_LICENSE_FILES = COPYING
@@ -20,6 +20,7 @@ X48NG_DEPENDENCIES = \
 
 X48NG_MAKE_ENV = \
   WITH_X11=no \
+  WITH_SDL2=no \
   PKG_CONFIG_SYSROOT_DIR="$(STAGING_DIR)" \
   PKG_CONFIG_PATH="$(STAGING_DIR)/usr/lib/pkgconfig"
 
