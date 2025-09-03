@@ -7,7 +7,8 @@
 set -e
 
 # Default flash type and options
-AUTO_YES=false
+YES_MODE=false
+AUTO_MODE=false
 UPDATE_IMG="SDK/output/firmware/update.img"
 
 # Colors for output
@@ -25,30 +26,22 @@ print_header() {
 }
 
 print_instructions() {
-    echo -e "${YELLOW}📋 FLASHING INSTRUCTIONS:${NC}"
+    echo -e "${YELLOW}📋 FLASHING OPTIONS:${NC}"
     echo
-    echo -e "${GREEN}1. Prepare the PicoCalc:${NC}"
-    echo "   • Insert SD card into the LuckFox Lyra SD card slot"
-    echo "   • Boot the PicoCalc to Linux"
-    echo "   • ⚠️  EJECT any external SD card before running reboot command"
-    echo -e "   • Log in and run: ${BLUE}reboot loader${NC} (device may hang if SD card is inserted)"
-    echo "   • The device will reboot into loader mode"
+    echo -e "${GREEN}🤖 Auto (recommended):${NC}"
+    echo "   • Use --auto flag to automatically reboot device"
+    echo "   • Requires ADB installed and USB debugging enabled"
     echo
-    echo -e "${GREEN}2. Connect USB:${NC}"
-    echo -e "   • Connect USB-C cable to the ${YELLOW}LOWER${NC} USB-C port (LuckFox Lyra)"
-    echo "   • Connect other end to your computer"
-    echo "   • The device should be detected in loader mode"
+    echo -e "${GREEN}🔧 Manual:${NC}"
+    echo "   • Insert SD card into LuckFox Lyra slot"
+    echo "   • Boot PicoCalc to Linux and eject any external SD cards"
+    echo -e "   • Run: ${BLUE}reboot loader${NC} (or hold BOOT button while connecting USB)"
+    echo -e "   • Connect USB-C to ${YELLOW}LOWER${NC} port (LuckFox Lyra)"
     echo
-    echo -e "${GREEN}3. Alternative method (if Linux access unavailable):${NC}"
-    echo "   • Remove back cover of PicoCalc"
-    echo "   • Hold BOOT button while plugging in USB cable"
-    echo "   • Keep holding until device is detected"
-    echo
-    echo -e "${YELLOW}⚠️  IMPORTANT:${NC}"
-    echo "   • Use the LOWER USB-C port (LuckFox Lyra), not the upper one"
-    echo "   • SD card must be inserted before flashing"
-    echo "   • Ensure update image has been built first"
-    echo
+    if [ "$AUTO_MODE" = true ]; then
+        echo -e "${BLUE}ℹ️  Using auto flashing - device will be rebooted automatically${NC}"
+        echo
+    fi
 }
 
 get_target_group() {
@@ -130,6 +123,17 @@ check_usb_permissions() {
 check_prerequisites() {
     echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
     
+    # Check ADB if in auto mode
+    if [ "$AUTO_MODE" = true ]; then
+        if ! command -v adb &> /dev/null; then
+            echo -e "${RED}❌ Error: adb command not found${NC}"
+            echo "Auto mode requires ADB to be installed and in PATH"
+            echo "Please install Android Debug Bridge (ADB) or use manual mode"
+            exit 1
+        fi
+        echo -e "${GREEN}✅ ADB found${NC}"
+    fi
+    
     # Check if we're using direct file flashing or rkflash.sh
     if [ "$FLASH_TYPE" = "file" ]; then
         # Direct flashing mode - check upgrade_tool and specified file
@@ -176,29 +180,60 @@ check_prerequisites() {
     check_usb_permissions
 }
 
+auto_enter_loader_mode() {
+    echo -e "${BLUE}🤖 Automatically rebooting device...${NC}"
+    echo
+    
+    # Check ADB connection
+    if ! adb devices | grep -q "device$"; then
+        echo -e "${RED}❌ No ADB device detected${NC}"
+        echo "Ensure device is booted with USB debugging enabled"
+        echo "Check with: adb devices"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}✅ ADB device found${NC}"
+    
+    # Send reboot command and wait
+    echo -e "${BLUE}Sending reboot command...${NC}"
+    adb shell reboot loader || { echo -e "${RED}❌ Reboot command failed${NC}"; exit 1; }
+    
+    echo -e "${BLUE}Waiting 5 seconds...${NC}"
+    for i in {5..1}; do
+        echo -ne "${YELLOW}$i...${NC}"
+        sleep 1
+    done
+    echo
+    echo -e "${GREEN}✅ Device ready for flashing${NC}"
+    echo
+}
+
 confirm_flash() {
     local flash_method_desc
     if [ "$FLASH_TYPE" = "file" ]; then
-        flash_method_desc="custom image file: $(basename "$UPDATE_IMG")"
+        flash_method_desc="custom image: $(basename "$UPDATE_IMG")"
     else
-        flash_method_desc="'$FLASH_TYPE' image"
-    fi
-    
-    if [ "$AUTO_YES" = true ]; then
-        echo -e "${YELLOW}⚡ Auto-flashing $flash_method_desc (--yes mode)${NC}"
-        echo -e "${RED}⚠️  WARNING: This will overwrite the firmware on your PicoCalc!${NC}"
-        echo
-        return
+        flash_method_desc="$FLASH_TYPE image"
     fi
     
     echo -e "${YELLOW}⚡ Ready to flash $flash_method_desc${NC}"
+    echo -e "${RED}⚠️  WARNING: This will overwrite your PicoCalc firmware!${NC}"
     echo
-    echo -e "${RED}⚠️  WARNING: This will overwrite the firmware on your PicoCalc!${NC}"
-    echo
-    read -p "Are you sure you want to continue? (y/N): " -n 1 -r
+    
+    if [ "$YES_MODE" = true ]; then
+        echo -e "${BLUE}ℹ️  Auto-flashing (--yes)${NC}"
+        return
+    fi
+    
+    local prompt="Continue? (y/N): "
+    if [ "$AUTO_MODE" = true ]; then
+        prompt="Reboot device and flash? (y/N): "
+    fi
+    
+    read -p "$prompt" -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}Flash cancelled by user${NC}"
+        echo -e "${YELLOW}Cancelled${NC}"
         exit 0
     fi
     echo
@@ -207,8 +242,13 @@ confirm_flash() {
 flash_device() {
     echo -e "${BLUE}🚀 Starting flash process...${NC}"
     echo
-    echo -e "${YELLOW}Make sure your PicoCalc is in loader mode and connected via USB-C!${NC}"
-    echo
+    
+    if [ "$AUTO_MODE" = true ]; then
+        auto_enter_loader_mode
+    else
+        echo -e "${YELLOW}Ensure PicoCalc is in loader and connected via USB-C!${NC}"
+        echo
+    fi
     
     # Change to project directory to ensure paths work correctly
     cd "$(dirname "$0")"
@@ -387,6 +427,7 @@ show_usage() {
     echo
     echo "Options:"
     echo "  -y, --yes        Skip confirmation prompts and flash automatically"
+    echo "  -a, --auto       Automatically put device in loader mode using ADB"
     echo "  -f, --file FILE  Flash a specific image file directly with upgrade_tool"
     echo "  -h, --help       Show this help message"
     echo
@@ -399,10 +440,13 @@ show_usage() {
     echo "Examples:"
     echo "  $0                        # Flash update image with prompts"
     echo "  $0 -y                     # Flash update image automatically"
+    echo "  $0 --auto                 # Auto reboot to loader mode and flash"
+    echo "  $0 -a -y                  # Auto reboot and flash without prompts"
     echo "  $0 -y update              # Flash update image automatically"
     echo "  $0 recovery               # Flash recovery image with prompts"
     echo "  $0 erase                  # Erase flash memory (with confirmation)"
     echo "  $0 -f custom.img          # Flash custom image file directly"
+    echo "  $0 --auto -f custom.img   # Auto reboot and flash custom image"
     echo "  $0 -y -f custom.img       # Flash custom image file automatically"
     echo
 }
@@ -413,7 +457,11 @@ main() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             -y|--yes)
-                AUTO_YES=true
+                YES_MODE=true
+                shift
+                ;;
+            -a|--auto)
+                AUTO_MODE=true
                 shift
                 ;;
             -h|--help)

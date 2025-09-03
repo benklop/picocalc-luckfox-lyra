@@ -1,0 +1,42 @@
+--- a/init/halt.c
++++ b/init/halt.c
+@@ -166,8 +166,6 @@
+ static volatile int caught_sigterm = FALSE;
+ static void signal_handler(int sig)
+ {
+-	bb_error_msg("Caught signal %d", sig);
+-
+ 	if (sig == SIGTERM)
+ 		caught_sigterm = TRUE;
+ }
+@@ -177,18 +175,24 @@
+ 	struct sigaction sa;
+ 	int pid;
+ 
+-	/* Fork new thread to handle reboot */
++	/* Single fork and setsid to detach from ADB process tree */
+ 	if ((pid = fork()))
+ 		return pid < 0 ? pid : 0;
+-
+-	/* Handle signal and reboot in child thread */
++	
++	/* Child: create new session and detach from controlling terminal */
++	setsid();
++	
++	/* Redirect I/O to avoid keeping shell open */
++	close(STDIN_FILENO);
++	close(STDOUT_FILENO);
++	close(STDERR_FILENO);
++	
++	/* Handle signal and reboot in detached child process */
+ 	sigemptyset(&sa.sa_mask);
+ 	sa.sa_flags = 0;
+ 	sa.sa_handler = signal_handler;
+ 	sigaction_set(SIGTERM, &sa);
+ 
+-	bb_error_msg("Waiting for SIGTERM");
+-
+ 	/* The init will send SIGTERM to us after SHUTDOWN actions */
+ 	while (!caught_sigterm)
+ 		usleep(50000);
+z
