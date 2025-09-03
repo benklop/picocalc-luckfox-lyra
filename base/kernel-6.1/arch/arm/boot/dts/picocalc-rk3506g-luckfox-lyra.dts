@@ -267,7 +267,7 @@
 &spi1 {
 	num-cs = <1>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&rm_io28_spi1_mosi &rm_io29_spi1_clk &rm_io30_spi1_csn0 &rm_io31_spi1_miso>;
+	pinctrl-0 = <&rm_io28_spi1_mosi &rm_io29_spi1_clk &rm_io30_spi1_csn0 &rm_io31_spi1_miso &sdcard_det>;
 	status = "okay";
 	spi_sdcard0: spi-sdcard@0 {
 		compatible = "mmc-spi-slot";
