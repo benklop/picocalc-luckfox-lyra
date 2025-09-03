@@ -6,8 +6,30 @@ mount -t devtmpfs devtmpfs /dev
 
 mount -o remount,rw /
 
+# Wait for devices to be ready
+sleep 1
+
 mkdir -p /overlay
-mount /dev/mmcblk0p5 /overlay
+
+# Try to mount overlay by label first, fallback to device path
+OVERLAY_DEV="/dev/disk/by-label/overlay"
+if [ ! -e "$OVERLAY_DEV" ]; then
+    OVERLAY_DEV="/dev/mmcblk0p5"
+fi
+
+# Try to mount the overlay partition, format if it fails
+if ! mount "$OVERLAY_DEV" /overlay 2>/dev/null; then
+    echo "Formatting overlay partition..."
+    # Format the partition as ext4 with a label
+    mkfs.ext4 -F -L overlay "$OVERLAY_DEV"
+    if [ $? -eq 0 ]; then
+        echo "Overlay partition formatted successfully"
+        mount "$OVERLAY_DEV" /overlay
+    else
+        echo "Failed to format overlay partition, using tmpfs"
+        mount -t tmpfs tmpfs /overlay
+    fi
+fi
 
 mkdir -p /overlay/lower /overlay/upper /overlay/work /overlay/merged
 mount --bind / /overlay/lower
