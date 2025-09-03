@@ -25,6 +25,7 @@ These features are actively being developed. Contributions and testing are welco
 2. **Run the build**: Execute the build script:
    ```bash
    ./build.sh
+   ./build.sh all
    ```
 
 3. **Get the results**: After the build completes, your images will be available in the `./output/` directory:
@@ -55,18 +56,6 @@ The build system:
 3. **Builds the complete system** using the configured toolchain
 4. **Extracts all build artifacts** to the `./output/` directory for easy access
 5. **Provides flashing tools** for easy deployment to hardware
-
-## Manual Docker Usage
-
-If you prefer to run the Docker container manually:
-
-```bash
-# Build the Docker image
-docker build -t picocalc-lyra-builder .
-
-# Run the container with output volume mount
-docker run --rm -v "$(pwd)/config:/opt/Lyra-SDK/buildroot/configs:Z" -v "$(pwd)/output:/opt/Lyra-SDK/output:Z" picocalc-lyra-builder --help
-```
 
 ## File Structure
 
