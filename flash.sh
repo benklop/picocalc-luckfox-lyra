@@ -150,24 +150,25 @@ check_prerequisites() {
         echo "   • Image file exists: $UPDATE_IMG ($(du -h "$UPDATE_IMG" | cut -f1))"
         echo
     else
-        # Using rkflash.sh wrapper
-        if [ ! -f "SDK/rkflash.sh" ]; then
-            echo -e "${RED}❌ Error: SDK/rkflash.sh not found${NC}"
-            echo "Make sure you're running this from the project root directory"
+        # Using upgrade_tool directly instead of rkflash.sh wrapper
+        if [ ! -f "SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool" ]; then
+            echo -e "${RED}❌ Error: SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool not found${NC}"
+            echo "Please build the firmware first using: ./build.sh"
             exit 1
         fi
         
-        # Check if update image exists
-        if [ ! -f "$UPDATE_IMG" ]; then
+        # Check if update image exists (for update flash type)
+        if [ "$FLASH_TYPE" = "update" ] && [ ! -f "$UPDATE_IMG" ]; then
             echo -e "${RED}❌ Error: $UPDATE_IMG not found${NC}"
             echo "Please build the firmware first using: ./build.sh"
             exit 1
         fi
         
         echo -e "${GREEN}✅ Prerequisites check passed${NC}"
-        echo "   • rkflash.sh found"
-        echo "   • Output directory exists"
-        echo "   • Update image exists ($(du -h "$UPDATE_IMG" | cut -f1))"
+        echo "   • upgrade_tool found"
+        if [ "$FLASH_TYPE" = "update" ]; then
+            echo "   • Update image exists ($(du -h "$UPDATE_IMG" | cut -f1))"
+        fi
         echo
     fi
     
@@ -213,21 +214,65 @@ flash_device() {
     cd "$(dirname "$0")"
     
     local flash_success=false
+    local upgrade_tool="./SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool"
+    
+    # Function to run upgrade_tool and check exit code
+    run_upgrade_tool() {
+        local cmd="$@"
+        echo -e "${BLUE}Running: $upgrade_tool $cmd${NC}"
+        
+        if $upgrade_tool $cmd; then
+            return 0
+        else
+            echo -e "${RED}ERROR: upgrade_tool failed with exit code $?${NC}"
+            return 1
+        fi
+    }
     
     if [ "$FLASH_TYPE" = "file" ]; then
         # Direct flashing with upgrade_tool
         echo -e "${GREEN}Flashing user-specified image: $UPDATE_IMG${NC}"
         echo
-        if ./SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool uf "$UPDATE_IMG"; then
+        if run_upgrade_tool uf "$UPDATE_IMG"; then
             flash_success=true
         fi
     else
-        # Using rkflash.sh wrapper script
-        echo -e "${GREEN}Executing: ./SDK/rkflash.sh $FLASH_TYPE${NC}"
-        echo
-        if ./SDK/rkflash.sh "$FLASH_TYPE"; then
-            flash_success=true
-        fi
+        # Call upgrade_tool directly based on flash type
+        case "$FLASH_TYPE" in
+            "update")
+                echo -e "${GREEN}Flashing update image: SDK/rockdev/update.img${NC}"
+                echo
+                if run_upgrade_tool uf "SDK/rockdev/update.img"; then
+                    flash_success=true
+                fi
+                ;;
+            "recovery")
+                echo -e "${GREEN}Flashing recovery image: SDK/rockdev/recovery.img${NC}"
+                echo
+                if run_upgrade_tool di -r "SDK/rockdev/recovery.img"; then
+                    flash_success=true
+                fi
+                ;;
+            "firmware")
+                echo -e "${GREEN}Flashing firmware components${NC}"
+                echo
+                # Flash multiple components for firmware
+                if run_upgrade_tool ul -noreset "SDK/rockdev/MiniLoaderAll.bin" && \
+                   run_upgrade_tool di -p "SDK/rockdev/parameter.txt" && \
+                   run_upgrade_tool di -uboot "SDK/rockdev/uboot.img" && \
+                   run_upgrade_tool di -trust "SDK/rockdev/trust.img" && \
+                   run_upgrade_tool di -b "SDK/rockdev/boot.img" && \
+                   run_upgrade_tool di -rootfs "SDK/rockdev/rootfs.img" && \
+                   run_upgrade_tool rd; then
+                    flash_success=true
+                fi
+                ;;
+            *)
+                echo -e "${RED}❌ Error: Unsupported flash type '$FLASH_TYPE'${NC}"
+                echo "Supported types: update, recovery, firmware, or use -f for custom files"
+                exit 1
+                ;;
+        esac
     fi
     
     # Handle results
@@ -256,10 +301,10 @@ flash_device() {
 check_erase_prerequisites() {
     echo -e "${BLUE}🔍 Checking erase prerequisites...${NC}"
     
-    # Using rkflash.sh wrapper
-    if [ ! -f "SDK/rkflash.sh" ]; then
-        echo -e "${RED}❌ Error: SDK/rkflash.sh not found${NC}"
-        echo "Make sure you're running this from the project root directory"
+    # Check upgrade_tool
+    if [ ! -f "SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool" ]; then
+        echo -e "${RED}❌ Error: SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool not found${NC}"
+        echo "Please build the firmware first using: ./build.sh"
         exit 1
     fi
     
@@ -272,7 +317,7 @@ check_erase_prerequisites() {
     fi
     
     echo -e "${GREEN}✅ Prerequisites check passed${NC}"
-    echo "   • rkflash.sh found"
+    echo "   • upgrade_tool found"
     echo "   • Loader file exists: SDK/rockdev/MiniLoaderAll.bin"
     echo "   • Erase operation ready"
     echo
@@ -307,10 +352,12 @@ erase_device() {
     # Change to project directory to ensure paths work correctly
     cd "$(dirname "$0")"
     
-    echo -e "${RED}Executing: ./SDK/rkflash.sh erase${NC}"
+    local upgrade_tool="./SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool"
+    
+    echo -e "${RED}Executing: $upgrade_tool EF SDK/rockdev/MiniLoaderAll.bin${NC}"
     echo
     
-    if ./SDK/rkflash.sh erase; then
+    if $upgrade_tool EF "SDK/rockdev/MiniLoaderAll.bin"; then
         echo
         echo -e "${GREEN}✅ Flash erase completed successfully!${NC}"
         echo
