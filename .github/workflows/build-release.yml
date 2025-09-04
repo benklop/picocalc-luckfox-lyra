@@ -32,6 +32,7 @@ jobs:
         mkdir -p .ccache
         mkdir -p buildroot-output
         mkdir -p config
+        mkdir -p release-artifacts
         
     - name: Set up build environment
       run: |
@@ -44,6 +45,18 @@ jobs:
         # Run the full build process
         echo "Building firmware..."
         ./build.sh all
+        
+    - name: Create SD card image
+      run: |
+        # Create flashable SD card image
+        echo "Creating SD card image..."
+        ./image.sh -o release-artifacts/sdcard.img
+        
+        # Create compressed version for easier download
+        gzip -k release-artifacts/sdcard.img
+        
+        echo "SD card image created successfully"
+        ls -la release-artifacts/sdcard.img*
         
     - name: Check build outputs
       run: |
@@ -109,6 +122,8 @@ jobs:
       with:
         files: |
           picocalc-firmware-${{ github.ref_name }}.tar.gz
+          release-artifacts/sdcard.img
+          release-artifacts/sdcard.img.gz
           release-artifacts/update.img
           release-artifacts/update.img.gz
           release-artifacts/*.bin
@@ -122,19 +137,32 @@ jobs:
           
           This release contains the complete firmware image for the ClockworkPi PicoCalc running on LuckFox Lyra hardware.
           
-          ### Installation
+          ### Quick Start (Recommended)
           
-          1. Download `update.img` or extract it from the archive
-          2. Flash to an SD card using dd, Raspberry Pi Imager, or similar tool:
+          **For most users, download the SD card image:**
+          
+          1. Download `sdcard.img.gz` (compressed) or `sdcard.img` (uncompressed)
+          2. Flash directly to an SD card using dd, Raspberry Pi Imager, balenaEtcher, or similar:
              ```bash
-             dd if=update.img of=/dev/sdX bs=1M status=progress
+             # If using compressed image:
+             gunzip -c sdcard.img.gz | sudo dd of=/dev/sdX bs=1M status=progress
+             
+             # If using uncompressed image:
+             sudo dd if=sdcard.img of=/dev/sdX bs=1M status=progress
              ```
           3. Insert the SD card into your PicoCalc and power on
           
+          ### Advanced Installation
+          
+          **For advanced users or custom installations:**
+          
+          1. Download `update.img` for use with Rockchip flash tools
+          2. Flash using rkdeveloptool, RKDevTool, or similar Rockchip utilities
+          
           ### Files
           
-          - `update.img` - Complete system image (flash this to SD card)
-          - `update.img.gz` - Compressed version of the system image
+          - `sdcard.img` / `sdcard.img.gz` - **Recommended**: Complete SD card image (flash directly to SD card)
+          - `update.img` / `update.img.gz` - Rockchip update image (for use with Rockchip tools)
           - `boot.img` - Boot partition image (for advanced users)
           - `uboot.img` - U-Boot bootloader (for advanced users)
           - `MiniLoaderAll.bin` - Loader binary (for advanced users)
