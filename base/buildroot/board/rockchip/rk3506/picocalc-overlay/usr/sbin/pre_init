@@ -9,7 +9,7 @@ mount -o remount,rw /
 mkdir -p /overlay
 
 # Try to mount overlay by label first, fallback to device path
-OVERLAY_DEV="/dev/disk/by-label/overlay"
+OVERLAY_DEV=$(blkid | grep 'PARTLABEL="overlay"' | sed 's/:.*$//')
 
 # Try to mount the overlay partition, format if it fails
 if ! mount "$OVERLAY_DEV" /overlay 2>/dev/null; then
