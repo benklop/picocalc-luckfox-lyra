@@ -1,0 +1,48 @@
+#!/bin/sh
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+mount -o remount,rw /
+
+mkdir -p /overlay
+
+# Try to mount overlay by label first, fallback to device path
+OVERLAY_DEV=$(blkid | grep 'PARTLABEL="overlay"' | sed 's/:.*$//')
+
+# Try to mount the overlay partition, format if it fails
+if ! mount "$OVERLAY_DEV" /overlay 2>/dev/null; then
+    echo "Formatting overlay partition..."
+    # Format the partition as ext4 with a label
+    mkfs.ext4 -F -L overlay "$OVERLAY_DEV"
+    if [ $? -eq 0 ]; then
+        echo "Overlay partition formatted successfully"
+        mount "$OVERLAY_DEV" /overlay
+    else
+        echo "Failed to format overlay partition, using tmpfs"
+        mount -t tmpfs tmpfs /overlay
+    fi
+fi
+
+mkdir -p /overlay/lower /overlay/upper /overlay/work /overlay/merged
+mount --bind / /overlay/lower
+
+mount -t overlay overlay -o noatime,lowerdir=/overlay/lower,upperdir=/overlay/upper,workdir=/overlay/work /overlay/merged
+
+mkdir -p /overlay/merged/rom
+
+pivot_root /overlay/merged /overlay/merged/rom
+
+mount --move /rom/proc /proc
+mount --move /rom/sys /sys
+mount --move /rom/dev /dev
+
+mount --move /rom/overlay /overlay
+
+mount -o remount,ro /rom
+mount -o remount,ro /overlay/lower
+
+umount -l /rom/dev
+
+exec /sbin/init

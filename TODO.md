@@ -12,7 +12,7 @@ This document tracks known issues, work-in-progress features, and planned improv
   - **Priority**: High
 
 ### WiFi Connectivity  
-- [ ] **RTL8188FU WiFi driver** - Driver builds but WiFi not functional
+- [x] **RTL8188FU WiFi driver** - Driver builds but WiFi not functional
   - Driver package exists in `base/buildroot/package/rtl8188fu/`
   - Firmware installation configured but may need debugging
   - Kernel configuration requirements may need adjustment
@@ -27,7 +27,7 @@ This document tracks known issues, work-in-progress features, and planned improv
   - Would streamline flashing workflow significantly
   - **Priority**: Medium
 
-- [ ] **Fix SD card ejection for `reboot loader`** - Device hangs during reboot if external SD card is inserted
+- [x] **Fix SD card ejection for `reboot loader`** - Device hangs during reboot if external SD card is inserted
   - Currently users must manually eject SD cards before running `reboot loader`
   - Should add hook to reboot command to automatically unmount and eject external SD cards
   - Alternative: modify reboot script to handle mounted SD cards gracefully
@@ -40,12 +40,6 @@ This document tracks known issues, work-in-progress features, and planned improv
 - [x] ✅ **Firmware installation** - Configured in package makefile
 - [ ] **Driver debugging** - Investigate why WiFi doesn't work
 - [ ] **Kernel config validation** - Ensure all required options enabled
-
-### Perl Packages for Ceni
-- [x] ✅ **perl-term-readkey** - Cross-compilation fixes implemented
-- [x] ✅ **perl-io-tty** - Added missing dependency for IO::Pty functionality
-- [x] ✅ **perl-curses-ui** - User interface library for Ceni
-- [x] ✅ **perl-expect** - Terminal automation library
 
 ### Audio Packages
 - [ ] **ALSA utilities** - Add alsa-utils package for audio debugging
@@ -74,7 +68,7 @@ This document tracks known issues, work-in-progress features, and planned improv
 
 ### Boot Configuration
 - [ ] **Document Windows flashing process** - I don't use windows so I can't really test this as easily
-- [ ] **Separate /home partition** - Split /home into dedicated partition to preserve user data
+- [x] **Separate /home partition** - Split /home into dedicated partition to preserve user data
   - Currently /home is part of rootfs and gets wiped during firmware updates
   - Would allow firmware updates while preserving user files and configurations
   - Requires modifying partition layout and parameter.txt
