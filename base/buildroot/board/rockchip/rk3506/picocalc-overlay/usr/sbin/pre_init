@@ -6,16 +6,10 @@ mount -t devtmpfs devtmpfs /dev
 
 mount -o remount,rw /
 
-# Wait for devices to be ready
-sleep 1
-
 mkdir -p /overlay
 
 # Try to mount overlay by label first, fallback to device path
 OVERLAY_DEV="/dev/disk/by-label/overlay"
-if [ ! -e "$OVERLAY_DEV" ]; then
-    OVERLAY_DEV="/dev/mmcblk0p5"
-fi
 
 # Try to mount the overlay partition, format if it fails
 if ! mount "$OVERLAY_DEV" /overlay 2>/dev/null; then
