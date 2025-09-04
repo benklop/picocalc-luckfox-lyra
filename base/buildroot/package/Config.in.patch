@@ -14,6 +14,7 @@
  
 +	menu "Interactive Fiction games"
 +		source "package/garglk/Config.in"
++		source "package/glkcli/Config.in"
 +		source "package/glkterm/Config.in"
 +	endmenu
  menu "Libretro cores and retroarch"
