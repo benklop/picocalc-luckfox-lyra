@@ -12,20 +12,20 @@ if BR2_PACKAGE_GLKTERM
 
 menu "Interpreters for GLKTerm"
 
-config BR2_PACKAGE_GLKTERM_ADVSYS
-    bool "advsys"
+    config BR2_PACKAGE_GLKTERM_ADVSYS
+      bool "advsys"
 
-config BR2_PACKAGE_GLKTERM_AGILITY
-    bool "agility"
+    config BR2_PACKAGE_GLKTERM_AGILITY
+      bool "agility"
 
-config BR2_PACKAGE_GLKTERM_ALAN2
-    bool "alan2"
+    config BR2_PACKAGE_GLKTERM_ALAN2
+      bool "alan2"
 
-config BR2_PACKAGE_GLKTERM_ALAN3
-    bool "alan3"
+    config BR2_PACKAGE_GLKTERM_ALAN3
+      bool "alan3"
 
-config BR2_PACKAGE_GLKTERM_BOCFEL
-    bool "bocfel"
+    config BR2_PACKAGE_GLKTERM_BOCFEL
+      bool "bocfel"
 
     config BR2_PACKAGE_GLKTERM_GLULXE
       bool "glulxe"

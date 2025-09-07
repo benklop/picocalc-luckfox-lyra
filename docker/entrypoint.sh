@@ -9,15 +9,21 @@ unpack_sdk() {
     echo "SDK not unpacked, Retrieving..."
 
     # URL found at https://wiki.luckfox.com/Luckfox-Lyra/Download
-    SDK_URL=https://drive.google.com/file/d/1bQrszU23AyFWGS9-mnIetGobsmtvg13W/view?usp=drive_link
+    # Update notices: https://forums.luckfox.com/viewtopic.php?t=1420
+    # updated URL 2025-08-15
+    SDK_URL=https://drive.google.com/file/d/15nq-Fac9q6zmisKZgLDZyoifSkL_48rG/view?usp=drive_link
 
 
     # Downloading the SDK
     if [ -f /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz ]; then
         echo "Luckfox_Lyra_SDK.tar.gz already exists, skipping download."
     else
-        echo "Downloading the SDK from: $SDK_URL"
-        gdown --fuzzy $SDK_URL -O /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
+        echo "Downloading the SDK from: $SDK_URL..."
+        if [ -t 1 ]; then
+            gdown --fuzzy $SDK_URL -O /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
+        else
+            gdown --fuzzy --quiet $SDK_URL -O /opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz
+        fi
     fi
 
     local sdk_tarball_path="/opt/Lyra-SDK/Luckfox_Lyra_SDK.tar.gz"
@@ -70,7 +76,7 @@ apply_overlay() {
         local dst_dir="$2"
         
         # Find all .patch files in the source directory
-        find "$src_dir" -name "*.patch" | while read patch_file; do
+        while IFS= read -r -d '' patch_file; do
             # Get the relative path from the source directory
             local rel_path="${patch_file#$src_dir/}"
             # Remove the .patch extension to get the target file path
@@ -109,7 +115,7 @@ apply_overlay() {
                 mkdir -p "$(dirname "$target_path")"
                 cp "$patch_file" "$target_path.patch"
             fi
-        done
+        done < <(find "$src_dir" -name "*.patch" -print0)
     }
     
     # Function to copy files, excluding .patch files
