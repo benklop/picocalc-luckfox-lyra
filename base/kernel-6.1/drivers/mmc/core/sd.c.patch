@@ -1,0 +1,11 @@
+--- SDK/kernel-6.1/drivers/mmc/core/sd.c	2025-07-27 19:52:50.600781203 -0400
++++ src/kernel-6.1/drivers/mmc/core/sd.c	2025-09-02 23:03:33.357809462 -0400
+@@ -1729,7 +1729,7 @@
+ 
+ 	host->ios.signal_voltage = MMC_SIGNAL_VOLTAGE_330;
+ 	host->ios.vdd = fls(host->ocr_avail) - 1;
+-	mmc_regulator_set_vqmmc(host, &host->ios);
++	//mmc_regulator_set_vqmmc(host, &host->ios);
+ 	pr_info("Set signal voltage to initial state\n");
+ 
+ out:
