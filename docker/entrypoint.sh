@@ -51,7 +51,7 @@ unpack_sdk() {
         touch /opt/Lyra-SDK/.sdk_initialized
 
         echo "Extracting image generation tool.."
-        pushd build/tools/linux/programming_image_tool || exit 1
+        pushd tools/linux/programming_image_tool || exit 1
             tar --strip-components=1 -xvf programmer_image_tool*.tar
         popd || exit 1
     popd || exit 1
