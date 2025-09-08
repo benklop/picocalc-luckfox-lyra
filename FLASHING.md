@@ -131,10 +131,9 @@ If the device is running Linux:
 
 1. Boot the PicoCalc normally
 2. Access the Linux shell (SSH, serial console, ADB, or direct access)
-3. **⚠️ IMPORTANT: Eject any external SD card before proceeding** - The device may hang during reboot if an SD card is inserted
-4. Run the command: `reboot loader`
-5. The device will reboot into loader mode
-6. Connect USB-C cable to the **LOWER** port
+3. Run the command: `reboot loader`
+4. The device will reboot into loader mode
+5. Connect USB-C cable to the **LOWER** port
 
 ### Method B: Hardware Boot Button
 

@@ -33,8 +33,8 @@ print_instructions() {
     echo "   • Requires ADB installed and USB debugging enabled"
     echo
     echo -e "${GREEN}🔧 Manual:${NC}"
-    echo "   • Insert SD card into LuckFox Lyra slot"
-    echo "   • Boot PicoCalc to Linux and eject any external SD cards"
+    echo "   • Insert SD card into LuckFox Lyra slot (If not already inserted)"
+    echo "   • Boot PicoCalc to Linux"
     echo -e "   • Run: ${BLUE}reboot loader${NC} (or hold BOOT button while connecting USB)"
     echo -e "   • Connect USB-C to ${YELLOW}LOWER${NC} port (LuckFox Lyra)"
     echo
