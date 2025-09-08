@@ -15,6 +15,7 @@ Luckfox_Lyra_SDK.tar.gz*
 Luckfox_Lyra_SDK.tar.gz
 SDK-extracted
 SDK/
+download/
 # Common editor and system files
 .vscode/
 .idea/

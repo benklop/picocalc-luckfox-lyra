@@ -1,0 +1,28 @@
+From: Buildroot <buildroot@buildroot.org>
+Date: Sat, 7 Sep 2025 21:10:00 +0000
+Subject: [PATCH] Fix mustache.hpp header detection for source directory
+
+The mustache.hpp header may be downloaded to the source directory
+during the build process. Add a check for this location using
+include_directories() as recommended by Meson.
+
+Signed-off-by: Buildroot <buildroot@buildroot.org>
+---
+ meson.build | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 1234567..abcdefg 100644
+--- a/meson.build
++++ b/meson.build
+@@ -29,9 +29,9 @@ xapian_dep = dependency('xapian-core', static:static_deps)
+ 
+ if compiler.has_header('mustache.hpp')
+   extra_include = []
++elif compiler.has_header('mustache.hpp', args: '-I' + meson.current_source_dir())
++  extra_include = ['.']
+-elif compiler.has_header('mustache.hpp', args: '-I/usr/include/kainjow')
+-  extra_include = ['/usr/include/kainjow']
+ else
+   error('Cannot found header mustache.hpp')
+ endif
