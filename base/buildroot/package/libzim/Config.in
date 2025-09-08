@@ -1,0 +1,27 @@
+config BR2_PACKAGE_LIBZIM
+	bool "libzim"
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_XZ
+	select BR2_PACKAGE_ZSTD
+	help
+	  The Libzim is the reference implementation for the ZIM file format.
+	  It's a software library to read and write ZIM files on many systems
+	  and architectures.
+
+	  https://github.com/openzim/libzim
+
+if BR2_PACKAGE_LIBZIM
+
+config BR2_PACKAGE_LIBZIM_XAPIAN
+	bool "enable xapian search support"
+	select BR2_PACKAGE_XAPIAN
+	select BR2_PACKAGE_ICU
+	help
+	  Enable full-text search support using Xapian.
+	  This adds search capabilities but increases size.
+
+endif
+
+comment "libzim needs a toolchain w/ C++, threads"
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS

@@ -1,0 +1,24 @@
+config BR2_PACKAGE_LIBKIWIX
+	bool "libkiwix"
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_LIBZIM
+	select BR2_PACKAGE_LIBZIM_XAPIAN  # libkiwix requires xapian support in libzim
+	select BR2_PACKAGE_ICU
+	select BR2_PACKAGE_PUGIXML
+	select BR2_PACKAGE_LIBCURL
+	select BR2_PACKAGE_LIBMICROHTTPD
+	select BR2_PACKAGE_ZLIB
+	select BR2_PACKAGE_XAPIAN
+	help
+	  The Libkiwix provides the Kiwix software suite core. It contains
+	  the code shared by all Kiwix ports (Windows, GNU/Linux, macOS,
+	  Android, iOS, ...).
+
+	  Note: This package includes the mustache.hpp header file needed
+	  for templating functionality.
+
+	  https://github.com/kiwix/libkiwix
+
+comment "libkiwix needs a toolchain w/ C++, threads"
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS
