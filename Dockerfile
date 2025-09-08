@@ -4,7 +4,7 @@ FROM ubuntu:22.04 AS unpacker
 # Set environment variables to avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 # Configure ccache for root user
-ENV CCACHE_DIR=/root/.ccache
+ENV CCACHE_DIR=/opt/ccache
 ENV CCACHE_MAXSIZE=2G
 ENV CCACHE_SLOPPINESS=pch_defines,time_macros
 ENV CCACHE_COMPRESS=true
@@ -88,8 +88,12 @@ ARG DOCKER_USERID=default_userid
 WORKDIR /opt/Lyra-SDK
 
 RUN mkdir -p /opt/Lyra-SDK && \
+    mkdir -p /opt/download && \
+    mkdir -p /opt/ccache && \
     useradd -d /opt/Lyra-SDK -u $DOCKER_USERID $DOCKER_USER && \
-    chown $DOCKER_USER:$DOCKER_USER /opt/Lyra-SDK
+    chown $DOCKER_USER:$DOCKER_USER /opt/Lyra-SDK && \
+    chown $DOCKER_USER:$DOCKER_USER /opt/download && \
+    chown $DOCKER_USER:$DOCKER_USER /opt/ccache
 
 COPY ./docker/entrypoint.sh /entrypoint.sh
 

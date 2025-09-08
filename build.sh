@@ -92,6 +92,7 @@ CONTAINER_NAME="picocalc-lyra-build-$(date +%s)"
 DOCKER_VOLUMES=(
     "-v" "$(pwd)/SDK:/opt/Lyra-SDK:Z"
     "-v" "$(pwd)/download:/opt/download:Z"
+    "-v" "$(pwd)/.ccache:/opt/ccache:Z"
 )
 
 # Add overlay volumes if specified
@@ -111,6 +112,7 @@ fi
 # Create output directory for build artifacts
 mkdir -p "$(pwd)/SDK"
 mkdir -p "$(pwd)/download"
+mkdir -p "$(pwd)/.ccache"
 
 # Run the container
 docker run -it --rm --name "$CONTAINER_NAME" \
