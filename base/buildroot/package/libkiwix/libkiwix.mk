@@ -22,7 +22,7 @@ LIBKIWIX_DEPENDENCIES = \
 
 # Download mustache.hpp header file since it's not packaged
 define LIBKIWIX_DOWNLOAD_MUSTACHE
-	$(WGET) -O $(@D)/include/mustache.hpp \
+	$(WGET) -O $(@D)/mustache.hpp \
 		https://raw.githubusercontent.com/kainjow/Mustache/v4.1/mustache.hpp
 endef
 
