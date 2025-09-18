@@ -1,0 +1,10 @@
+config BR2_PACKAGE_X48NG
+	bool "x48ng"
+	depends on BR2_INSTALL_LIBSTDCPP
+	select BR2_PACKAGE_NCURSES
+	select BR2_PACKAGE_LUA
+	select BR2_PACKAGE_READLINE
+
+	help
+	  x49ng it is a reboot of the x48 HP 48 emulator 
+	  https://github.com/gwenhael-le-moine/x48ng
