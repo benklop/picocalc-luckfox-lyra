@@ -1,0 +1,578 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2024 Rockchip Electronics Co., Ltd.
+ * Copyright (c) 2025 nekocharm
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/soc/rockchip-amp.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/display/rockchip_vop.h>
+#include <dt-bindings/input/rk-input.h>
+#include <dt-bindings/sensor-dev.h>
+#include <dt-bindings/suspend/rockchip-rk3506.h>
+#include "rk3506.dtsi"
+
+#define CPU_GET_AFFINITY(cluster, cpu)		(cpu)
+
+/ {
+	model = "PicoCalc";
+	compatible = "rockchip,rk3506";
+
+	chosen {
+		bootargs = "earlycon=uart8250,mmio32,0xff0a0000 console=ttyFIQ0 fbcon=font:6x8 fbcon=map:10 storagemedia=sd root=PARTLABEL=rootfs rootfstype=ext4 init=/sbin/pre_init rootwait snd_aloop.index=7 snd_aloop.use_raw_jiffies=1 module_blacklist=rtl8xxxu";
+	};
+
+	aliases {
+		/* ensure mount mmc first */
+		mmc0 = &mmc;
+		mmc1 = &spi_sdcard0;
+		display0 = &dsi_panel;
+	};
+
+	rockchip_amp: rockchip-amp {
+		compatible = "rockchip,amp";
+		clocks = <&cru HCLK_M0>, <&cru STCLK_M0>,
+			<&cru PCLK_TIMER>, <&cru CLK_TIMER0_CH5>,
+			<&cru CLK_TIMER0_CH0>, <&cru CLK_TIMER0_CH4>;
+
+		amp-cpu-aff-maskbits = /bits/ 64 <0x0 0x1 0x1 0x2 0x2 0x4>;
+		amp-irqs = /bits/ 64 <
+			/* TIMER0 */
+			GIC_AMP_IRQ_CFG_ROUTE(126, 0xd0, CPU_GET_AFFINITY(0, 2))
+			/* TIMER4 */
+			GIC_AMP_IRQ_CFG_ROUTE(130, 0xd0, CPU_GET_AFFINITY(0, 2))>;
+		status = "okay";
+	};
+
+	mcu_log: mculog {
+		compatible = "picocalc,mculog";
+		memory-region = <&shmem_reserved>;
+		shmem-offset = <0x20>;
+		shmem-length = <0x7fe0>;
+	};
+
+	fiq_debugger: fiq-debugger {
+		compatible = "rockchip,fiq-debugger";
+		rockchip,serial-id = <0>;
+		rockchip,wake-irq = <0>;
+		rockchip,irq-mode-enable = <1>;
+		rockchip,baudrate = <1500000>;	/* Only 115200 and 1500000 */
+		interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	leds: leds {
+		compatible = "gpio-leds";
+		work_led: work-led {
+			gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+		};
+	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm0_4ch_3 0 25000 0>;
+		brightness-levels = <
+			  0  20  20  21  21  22  22  23
+			 23  24  24  25  25  26  26  27
+			 27  28  28  29  29  30  30  31
+			 31  32  32  33  33  34  34  35
+			 35  36  36  37  37  38  38  39
+			 40  41  42  43  44  45  46  47
+			 48  49  50  51  52  53  54  55
+			 56  57  58  59  60  61  62  63
+			 64  65  66  67  68  69  70  71
+			 72  73  74  75  76  77  78  79
+			 80  81  82  83  84  85  86  87
+			 88  89  90  91  92  93  94  95
+			 96  97  98  99 100 101 102 103
+			104 105 106 107 108 109 110 111
+			112 113 114 115 116 117 118 119
+			120 121 122 123 124 125 126 127
+			128 129 130 131 132 133 134 135
+			136 137 138 139 140 141 142 143
+			144 145 146 147 148 149 150 151
+			152 153 154 155 156 157 158 159
+			160 161 162 163 164 165 166 167
+			168 169 170 171 172 173 174 175
+			176 177 178 179 180 181 182 183
+			184 185 186 187 188 189 190 191
+			192 193 194 195 196 197 198 199
+			200 201 202 203 204 205 206 207
+			208 209 210 211 212 213 214 215
+			216 217 218 219 220 221 222 223
+			224 225 226 227 228 229 230 231
+			232 233 234 235 236 237 238 239
+			240 241 242 243 244 245 246 247
+			248 249 250 251 252 253 254 255
+		>;
+		default-brightness-level = <200>;
+		status = "disabled";
+	};
+
+	picocalc_snd: picocalc-snd-pwm {
+		compatible = "fsl,picocalc-snd-pwm";
+		pwms = <&pwm0_4ch_2 0 25000 0>, <&pwm0_4ch_1 0 25000 0>;
+        pwm-names = "pwm-snd-left", "pwm-snd-right";
+        pinctrl-names = "default";
+        pinctrl-0 = <&snd_pins>;
+		leftpin = <&gpio4 RK_PB3 GPIO_ACTIVE_HIGH>;
+		rightpin = <&gpio4 RK_PB2 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
+	vcc_sys: vcc-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+	};
+
+	vcc_3v3: vcc-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_3v3";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc_sys>;
+	};
+
+	vcc_1v8: vcc-1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_1v8";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vcc_3v3>;
+	};
+
+	//1.8V
+	vcc_ddr: vcc-ddr {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_ddr";
+		regulator-always-on;
+		regulator-boot-on;
+		vin-supply = <&vcc_sys>;
+	};
+
+	vdd_0v9: vdd-0v9 {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_0v9";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <900000>;
+		regulator-max-microvolt = <900000>;
+		vin-supply = <&vcc_sys>;
+	};
+
+	vdd_cpu: vdd-cpu {
+		compatible = "pwm-regulator";
+		pwms = <&pwm0_4ch_0 0 5000 1>;
+		regulator-name = "vdd_cpu";
+		regulator-min-microvolt = <500000>;
+		regulator-max-microvolt = <1500000>;
+		regulator-init-microvolt = <500000>;
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-settling-time-up-us = <250>;
+		pwm-supply = <&vcc_1v8>;
+	};
+};
+
+/**********cpu**********/
+&cpu0 {
+	cpu-supply = <&vdd_cpu>;
+	status = "okay";
+};
+
+/**********media**********/
+&mmc {
+	/* For SDMMC */
+	max-frequency = <52000000>;
+	bus-width = <4>;
+	no-sdio;
+	no-mmc;
+	cap-mmc-highspeed;
+	cap-sd-highspeed;
+	cd-gpios = <&gpio1 RK_PB6 GPIO_ACTIVE_LOW>; //det
+	disable-wp;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc_clk_pins &sdmmc_cmd_pins &sdmmc_bus4_pins &sdmmc_det &sdmmc_pwren>;
+	vqmmc-supply = <&vcc_3v3>;
+	vmmc-supply = <&vcc_3v3>;
+	status = "okay";
+};
+
+&spi1 {
+	num-cs = <1>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&rm_io28_spi1_mosi &rm_io29_spi1_clk &rm_io30_spi1_csn0 &rm_io31_spi1_miso &sdcard_det>;
+	status = "okay";
+	spi_sdcard0: spi-sdcard@0 {
+		compatible = "mmc-spi-slot";
+        reg = <0>;
+        spi-max-frequency = <50000000>;
+        voltage-ranges = <3300 3300>;
+        cd-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_LOW>;
+		status = "okay";
+	};
+};
+
+&fspi {
+	status = "okay";
+
+	flash@0 {
+		compatible = "spi-nand";
+		reg = <0>;
+		spi-max-frequency = <80000000>;
+		spi-rx-bus-width = <4>;
+		spi-tx-bus-width = <1>;
+	};
+};
+
+/**********reserved memory**********/
+&reserved_memory {
+	/* mcu address */
+	mcu_reserved: mcu@fff80000 {
+		reg = <0xfff80000 0xc000>;
+		no-map;
+	};
+
+	/* 0x20~0x8000 for log*/
+	shmem_reserved: shmem@3c00000 {
+		reg = <0x03c00000 0x8000>;
+		no-map;
+		no-cache;
+	};
+};
+
+/**********display**********/
+&cma {
+	size = <0x2000000>;
+};
+
+&display_subsystem {
+	logo-memory-region = <&drm_logo>;
+	status = "okay";
+};
+
+&route_dsi{
+	status = "okay";
+};
+
+&vop {
+	status = "okay";
+};
+
+&rga2 {
+	status = "okay";
+};
+
+&pwm0_4ch_3 {
+	pinctrl-names = "active";
+	pinctrl-0 = <&rm_io15_pwm0_ch3>;
+	status = "okay";
+};
+
+&dsi {
+	status = "okay";
+
+	dsi_panel: panel@0 {
+		status = "okay";
+		compatible = "simple-panel-dsi";
+		reg = <0>;
+		//backlight = <&ws_bl>;
+		power-supply = <&vcc_3v3>;
+
+		//reset-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_LOW>;
+		prepare-delay-ms = <120>;
+		reset-delay-ms = <120>;
+		init-delay-ms = <120>;
+		disable-delay-ms = <120>;
+		unprepare-delay-ms = <120>;
+
+		dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET )>;
+		dsi,format = <MIPI_DSI_FMT_RGB888>;
+		dsi,lanes  = <2>;  // FL7707N uses 2 lanes (0x31 in init code)
+
+		// 3.97inch FL7707N
+		width-mm = <80>;
+		height-mm = <80>;
+
+        /**
+         * DSI Command Sequence
+         * A byte stream formed by simple multiple dcs packets.
+         * byte 0 - dcs data type
+         * byte 1 - wait number of specified ms after dcs command transmitted
+         * byte 2 - packet payload length
+         * byte 3 - and beyond: number byte of payload
+
+         DSI Command data type reference:
+         https://forum.armsom.org/t/rk3588-mipi-display-debugging-rk3588-mipi-dsi-lcd-power-up-initialization-sequence/147
+         
+         0x05  Command type: Single byte data (DCS Short Write, no parameters) 
+         0x15  Command type: Two byte data (DCS Short Write, 1 parameter)
+         0x39  Command type: Multi byte data (DCS Long Write, n parameters n > 2)
+         0x03 Command type: Single byte data  (Generic Short Write, no parameters)
+         0x13 Command type: Two byte data (Generic Short Write, 1 parameter)
+         0x23 Command type: Three byte data  (Generic Short Write, 2 parameters)
+         0x29 Command type: Multi byte data  (Generic Long Write, n parameters n > 2)
+         */
+
+        // Unclear if 29h is the right command type for all these commands.
+        // May need to use 05h, 15h, 39h, etc. based on parameter count.
+		// 720x720 FL7707N panel init sequence converted from datasheet
+		panel-init-sequence = [
+			39 00 04 B9 F1 12 87
+			39 00 04 B2 B4 03 70
+			39 00 0B B3 10 10 28 28 03 FF 00
+				 00 00 00
+			39 00 02 B4 80
+			39 00 03 B5 0A 0A
+			39 00 03 B6 8D 8D
+			39 00 05 B8 26 22 F0 13
+			39 00 1C BA 31 81 05 F9 0E 0E 20
+				 00 00 00 00 00 00 00 44 25 00
+				 91 0A 00 00 01 4F 01 00 00 37
+			39 00 02 BC 47
+			39 00 06 BF 02 10 00 80 04
+			39 00 0A C0 73 73 50 50 00 00 12
+				 73 00
+			39 00 12 C1 36 00 32 32 77 E1 77
+				 77 CC CC FF FF 11 11 00 00 32
+			39 00 0D C7 10 00 0A 00 00 00 00
+				 00 ED C5 00 A5
+			39 00 05 C8 10 40 1E 03
+			39 00 02 CC 0B
+			39 00 23 E0 00 0A 0F 2A 33 3F 44 39
+				 06 0C 0E 14 15 13 15 10 18 00 0A
+				 0F 2A 33 3F 44 39 06 0C 0E 14 15
+				 13 15 10 18
+			39 00 08 E1 11 11 91 00 00 00 00
+			39 00 0F E3 07 07 0B 0B 0B 0B 00 00
+				 00 00 FF 04 C0 10
+			39 00 40 E9 C8 10 0A 00 00 80 81 12
+				 31 23 4F 86 A0 00 47 08 00 00 0C
+				 00 00 00 00 00 0C 00 00 00 98 02
+				 8B AF 46 02 88 88 88 88 88 98 13
+				 8B AF 57 13 88 88 88 88 88 00 00
+				 00 00 00 00 00 00 00 00 00 00 00
+			39 00 3E EA 97 0C 09 09 09 78 00 00
+				 00 00 00 9F 31 8B A8 31 75 88 88
+				 88 88 88 9F 20 8B A8 20 64 88 88
+				 88 88 88 23 00 00 02 71 00 00 00
+				 00 00 00 00 00 00 00 00 40 80 81
+				 00 00 00 00 00 00
+			39 00 04 EF FF FF 01
+			05 FA 02 11 00
+			05 32 02 29 00
+		];
+
+		disp_timings0: display-timings {
+			native-mode = <&fl7707n_720_720>;
+
+			fl7707n_720_720: fl7707n-720-720 {
+				clock-frequency = <36000000>;
+
+				hactive = <720>;
+				vactive = <720>;
+
+				vsync-len = <4>;    // VSA from datasheet
+				vback-porch = <20>; // VBP from datasheet
+				vfront-porch = <20>; // VFP from datasheet
+
+				hsync-len = <60>;    // HSA from datasheet
+				hback-porch = <120>; // HBP from datasheet
+				hfront-porch = <106>; // HFP from datasheet
+
+				vsync-active = <0>;
+				hsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active =<0>;
+			};
+		};
+
+	};
+};
+
+&dsi_dphy {
+	status = "okay";
+};
+
+&dsi_in_vop {
+	status = "okay";
+};
+
+&dsi_panel {
+	power-supply = <&vcc_3v3>;
+};
+
+&i2c2{
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&rm_io1_i2c2_scl &rm_io0_i2c2_sda>;
+};
+
+/**********adc**********/
+&tsadc {
+	status = "okay";
+};
+
+/**********usb**********/
+&usb20_otg0 {
+	dr_mode = "otg";
+	usb-role-switch;
+	role-switch-default-mode = "peripheral";
+	adp-disable;
+	srp-disable;
+	status = "okay";
+};
+
+&usb20_otg1 {
+	dr_mode = "host";
+	status = "okay";
+};
+
+&usb2phy {
+	status = "okay";
+};
+
+&u2phy_otg0 {
+	status = "okay";
+};
+
+&u2phy_otg1 {
+	status = "okay";
+};
+
+
+/**********i2c**********/
+&i2c0{
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&rm_io10_i2c0_scl &rm_io11_i2c0_sda>;
+/*
+	keyboard: keyboard@1f {
+		status = "okay";
+		compatible = "picocalc,picocalc-keyboard";
+		reg = <0x1f>;
+	};
+
+    rtc: rtc@68 {
+        compatible = "dallas,ds3231";
+        reg = <0x68>;
+        status = "okay";
+    };
+*/
+};
+
+/**********spi**********/
+&spi0 {
+	num-cs = <1>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&rm_io4_spi0_csn0 &rm_io5_spi0_miso &rm_io6_spi0_mosi &rm_io7_spi0_clk>;
+	status = "disabled";
+	spi_lcd0: spi-lcd@0 {
+		compatible = "ilitek,ili9488";
+		reg = <0>;
+		spi-max-frequency = <80000000>;
+		pinctrl-names = "default";
+    	pinctrl-0 = <&lcd_pins>;
+        dc-gpios = <&gpio0 RK_PA3 GPIO_ACTIVE_HIGH>;
+        reset-gpios = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
+        rotate = <0>;
+        width = <320>;
+        height = <320>;
+        buswidth = <8>;
+		status = "disabled";
+	};
+};
+
+/**********dma**********/
+&dmac0 {
+	arm,pl330-mcbufsz-bytes = <1024>;
+};
+
+/**********pwm**********/
+&pwm0_4ch_0 {
+	pinctrl-names = "active";
+	pinctrl-0 = <&rm_io21_pwm0_ch0>;
+	assigned-clocks = <&cru CLK_PWM0>;
+	assigned-clock-rates = <100000000>;
+	status = "okay";
+};
+
+&pwm0_4ch_1 {
+        pinctrl-names = "active";
+        pinctrl-0 = <&rm_io12_pwm0_ch1>;
+        status = "okay";
+        assigned-clocks = <&cru CLK_PWM0>;
+        assigned-clock-rates = <100000000>;
+};
+
+&pwm0_4ch_2 {
+		pinctrl-names = "active";
+		pinctrl-0 = <&rm_io13_pwm0_ch2>;
+		status = "okay";
+		assigned-clocks = <&cru CLK_PWM0>;
+		assigned-clock-rates = <100000000>;
+};
+
+&pwm0_4ch_3 {
+		pinctrl-names = "active";
+		pinctrl-0 = <&rm_io15_pwm0_ch3>;
+		status = "disabled";
+		assigned-clocks = <&cru CLK_PWM0>;
+		assigned-clock-rates = <100000000>;
+};
+
+/**********display**********/
+&rga2 {
+	status = "okay";
+};
+
+&vop {
+	status = "okay";
+};
+
+/**********pinctrl**********/
+&pinctrl {
+	sdmmc {
+		/omit-if-no-ref/
+		sdmmc_pwren: sdmmc-pwren {
+			rockchip,pins = <1 RK_PB7 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+
+		sdmmc_det: sdmmc-det {
+			rockchip,pins = <1 RK_PB6 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
+
+	sdcard {
+		sdcard_det: sdcard-det {
+			rockchip,pins = <1 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	lcd {
+		lcd_pins: lcd-pins {
+			rockchip,pins = 
+				<0 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>,
+				<0 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	picocalc_snd {
+		snd_pins: snd-pins {
+			rockchip,pins = 
+				<4 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>,
+				<4 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+};

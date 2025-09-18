@@ -341,6 +341,17 @@ flash_device() {
 check_erase_prerequisites() {
     echo -e "${BLUE}🔍 Checking erase prerequisites...${NC}"
     
+    # Check ADB if in auto mode
+    if [ "$AUTO_MODE" = true ]; then
+        if ! command -v adb &> /dev/null; then
+            echo -e "${RED}❌ Error: adb command not found${NC}"
+            echo "Auto mode requires ADB to be installed and in PATH"
+            echo "Please install Android Debug Bridge (ADB) or use manual mode"
+            exit 1
+        fi
+        echo -e "${GREEN}✅ ADB found${NC}"
+    fi
+    
     # Check upgrade_tool
     if [ ! -f "SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool" ]; then
         echo -e "${RED}❌ Error: SDK/tools/linux/Linux_Upgrade_Tool/Linux_Upgrade_Tool/upgrade_tool not found${NC}"
@@ -385,7 +396,14 @@ confirm_erase() {
 erase_device() {
     echo -e "${RED}🚨 Starting ERASE process...${NC}"
     echo
-    echo -e "${YELLOW}Make sure your PicoCalc is in loader mode and connected via USB-C!${NC}"
+    
+    if [ "$AUTO_MODE" = true ]; then
+        auto_enter_loader_mode
+    else
+        echo -e "${YELLOW}Make sure your PicoCalc is in loader mode and connected via USB-C!${NC}"
+        echo
+    fi
+    
     echo -e "${RED}⚠️  This will COMPLETELY ERASE the flash memory!${NC}"
     echo
     
@@ -445,6 +463,7 @@ show_usage() {
     echo "  $0 -y update              # Flash update image automatically"
     echo "  $0 recovery               # Flash recovery image with prompts"
     echo "  $0 erase                  # Erase flash memory (with confirmation)"
+    echo "  $0 -a erase               # Auto reboot before erase (with confirmation)"
     echo "  $0 -f custom.img          # Flash custom image file directly"
     echo "  $0 --auto -f custom.img   # Auto reboot and flash custom image"
     echo "  $0 -y -f custom.img       # Flash custom image file automatically"
