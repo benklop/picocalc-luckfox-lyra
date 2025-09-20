@@ -469,10 +469,56 @@ setup_target_system() {
 	mkdir -p "$ROOTFS_OUTPUT_DIR"
 	cd "$GENTOO_HOST_DIR"
 	
+	TARGET_ROOT="/usr/$CTARGET"
+	
+	# Prime the crossdev environment with target stage3 if not already done
+	if [ ! -d "$TARGET_ROOT/etc" ]; then
+		message "Priming crossdev environment with $TARGET_STAGE3_VARIANT stage3..."
+		
+		# Create target root directory
+		sudo mkdir -p "$TARGET_ROOT"
+		
+		# Download target stage3 for priming
+		MIRROR="https://distfiles.gentoo.org/releases"
+		
+		# Get latest target stage3 URL
+		message "Fetching latest $TARGET_STAGE3_VARIANT stage3 info..."
+		STAGE3_LIST_FILE="/tmp/latest-stage3-$TARGET_STAGE3_VARIANT.txt"
+		if ! wget -q "$MIRROR/$TARGET_ARCH_PATH/latest-stage3-$TARGET_STAGE3_VARIANT.txt" -O "$STAGE3_LIST_FILE"; then
+			error "Failed to download $TARGET_STAGE3_VARIANT stage3 list file"
+		fi
+		
+		message "Verifying PGP signature..."
+		LATEST_FILE=$(gpg --decrypt "$STAGE3_LIST_FILE" 2>/dev/null | \
+			grep '\.tar\.' | tail -n1 | cut -d' ' -f1)
+		rm -f "$STAGE3_LIST_FILE"
+		
+		if [ -z "$LATEST_FILE" ]; then
+			error "Could not determine latest $TARGET_STAGE3_VARIANT stage3 file"
+		fi
+		
+		message "Latest $TARGET_STAGE3_VARIANT stage3 file: $LATEST_FILE"
+		
+		STAGE3_URL="$MIRROR/$TARGET_ARCH_PATH/$LATEST_FILE"
+		STAGE3_FILE="$ROOTFS_OUTPUT_DIR/$(basename "$LATEST_FILE")"
+		
+		message "Downloading: $STAGE3_URL"
+		if [ ! -f "$STAGE3_FILE" ]; then
+			wget -c "$STAGE3_URL" -O "$STAGE3_FILE"
+		fi
+		
+		# Extract target stage3 to prime crossdev environment
+		message "Extracting $TARGET_STAGE3_VARIANT stage3 to $TARGET_ROOT..."
+		sudo tar xpf "$STAGE3_FILE" -C "$TARGET_ROOT" --xattrs-include='*.*' --numeric-owner
+		
+		message "Crossdev environment primed with $TARGET_STAGE3_VARIANT stage3"
+	else
+		message "Target environment already primed, skipping stage3 extraction"
+	fi
+	
 	# Set target profile
 	if [ -n "$RK_GENTOO_PROFILE" ]; then
 		message "Setting target profile to $RK_GENTOO_PROFILE"
-		TARGET_ROOT="/usr/$CTARGET"
 		
 		# List available profiles first
 		message "Available ARM profiles:"
