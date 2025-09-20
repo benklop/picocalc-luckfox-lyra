@@ -1,0 +1,99 @@
+--- a/device/rockchip/common/scripts/mk-rootfs.sh	2025-09-18 21:13:45.232326169 -0400
++++ b/device/rockchip/common/scripts/mk-rootfs.sh	2025-09-18 21:15:47.055626117 -0400
+@@ -167,6 +167,40 @@
+ 	finish_build build_debian $@
+ }
+ 
++build_gentoo()
++{
++	check_config RK_GENTOO || false
++
++	IMAGE_DIR="${1:-$RK_OUTDIR/gentoo}"
++
++	message "=========================================="
++	message "          Start building Gentoo rootfs"
++	message "=========================================="
++
++	"$RK_SCRIPTS_DIR/mk-gentoo.sh" gentoo "$IMAGE_DIR"
++
++	if [ -r "$RK_LOG_DIR/post-rootfs.log" ]; then
++		cat "$RK_LOG_DIR/post-rootfs.log"
++	else
++		warning "Building without post-rootfs stage!"
++	fi
++
++	# The Gentoo build script creates the image, so we just need to link it
++	ROOTFS_IMG="rootfs.${RK_ROOTFS_TYPE}"
++	GENTOO_OUTPUT_DIR="$RK_OUTDIR/gentoo"
++	
++	if [ -f "$GENTOO_OUTPUT_DIR/$ROOTFS_IMG" ]; then
++		ln -sf "$GENTOO_OUTPUT_DIR/$ROOTFS_IMG" "$IMAGE_DIR/$ROOTFS_IMG"
++	else
++		error "Gentoo rootfs image not found: $GENTOO_OUTPUT_DIR/$ROOTFS_IMG"
++	fi
++
++	[ -z "$RK_SECURITY" ] || "$RK_SCRIPTS_DIR/mk-security.sh" system \
++		$RK_SECURITY_CHECK_METHOD $IMAGE_DIR/$ROOTFS_IMG
++
++	finish_build build_gentoo $@
++}
++
+ # Hooks
+ 
+ usage_hook()
+@@ -179,6 +213,7 @@
+ 	usage_oneline "buildroot" "build buildroot rootfs"
+ 	usage_oneline "yocto" "build yocto rootfs"
+ 	usage_oneline "debian" "build debian rootfs"
++	usage_oneline "gentoo" "build gentoo rootfs"
+ }
+ 
+ clean_hook()
+@@ -207,11 +242,12 @@
+ 	rm -rf "$RK_OUTDIR/buildroot"
+ 	rm -rf "$RK_OUTDIR/yocto"
+ 	rm -rf "$RK_OUTDIR/debian"
++	rm -rf "$RK_OUTDIR/gentoo"
+ 	rm -rf "$RK_OUTDIR/rootfs"
+ 	rm -rf "$RK_FIRMWARE_DIR/rootfs.img"
+ }
+ 
+-INIT_CMDS="default buildroot debian yocto"
++INIT_CMDS="default buildroot debian yocto gentoo"
+ init_hook()
+ {
+ 	load_config RK_ROOTFS
+@@ -276,7 +312,7 @@
+ 	esac
+ }
+ 
+-BUILD_CMDS="rootfs buildroot debian yocto"
++BUILD_CMDS="rootfs buildroot debian yocto gentoo"
+ build_hook()
+ {
+ 	check_config RK_ROOTFS || false
+@@ -296,7 +332,7 @@
+ 	message "=========================================="
+ 
+ 	case "$ROOTFS" in
+-		yocto | debian | buildroot ) ;;
++		yocto | debian | buildroot | gentoo ) ;;
+ 		*) usage ;;
+ 	esac
+ 
+@@ -309,6 +345,7 @@
+ 		yocto) build_yocto "$IMAGE_DIR" ;;
+ 		debian) build_debian "$IMAGE_DIR" ;;
+ 		buildroot) build_buildroot "$IMAGE_DIR" ;;
++		gentoo) build_gentoo "$IMAGE_DIR" ;;
+ 	esac
+ 	touch "$ROOTFS_DIR/.stamp_build_finish"
+ 
+@@ -336,6 +373,6 @@
+ 
+ case "${1:-rootfs}" in
+ 	buildroot-config | bconfig | buildroot-make | bmake) pre_build_hook $@ ;;
+-	buildroot | debian | yocto ) init_hook $@ ;&
++	buildroot | debian | yocto | gentoo ) init_hook $@ ;&
+ 	*) build_hook $@ ;;
+ esac

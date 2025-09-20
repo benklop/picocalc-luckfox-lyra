@@ -1,0 +1,28 @@
+--- a/device/rockchip/common/configs/Config.in.rootfs	2025-09-18 21:13:45.230079911 -0400
++++ b/device/rockchip/common/configs/Config.in.rootfs	2025-09-18 21:14:12.427749633 -0400
+@@ -13,12 +13,14 @@
+ source "Config.in.buildroot"
+ source "Config.in.yocto"
+ source "Config.in.debian"
++source "Config.in.gentoo"
+ 
+ config RK_ROOTFS_SYSTEM
+ 	string
+ 	default "buildroot" if RK_ROOTFS_SYSTEM_BUILDROOT
+ 	default "debian" if RK_ROOTFS_SYSTEM_DEBIAN
+ 	default "yocto" if RK_ROOTFS_SYSTEM_YOCTO
++	default "gentoo" if RK_ROOTFS_SYSTEM_GENTOO
+ 
+ choice
+ 	prompt "default rootfs system"
+@@ -37,6 +39,10 @@
+ 	bool "Yocto"
+ 	depends on RK_YOCTO
+ 
++config RK_ROOTFS_SYSTEM_GENTOO
++	bool "Gentoo"
++	depends on RK_GENTOO
++
+ endchoice # default rootfs
+ 
+ config RK_ROOTFS_INITRD

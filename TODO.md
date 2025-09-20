@@ -2,6 +2,59 @@
 
 This document tracks known issues, work-in-progress features, and planned improvements for the PicoCalc LuckFox Lyra build system.
 
+## ✅ Recent Additions
+
+### Gentoo Linux Support
+- [x] ✅ **Gentoo rootfs integration** - Alternative to Buildroot/Yocto with full package management
+- [x] ✅ **ARM32 hardfp optimization** - Optimized for RK3506 ARM32 hardfp architecture  
+- [x] ✅ **Stage3 cross-compilation** - Automatic download and configuration from Gentoo stage3
+- [x] ✅ **Genpatches support** - Automatic kernel patching with Gentoo's patches
+- [x] ✅ **Device configuration** - `picocalc_luckfox_lyra_gentoo_sdmmc_dsi_720x720_defconfig`
+- [x] ✅ **Crossdev toolchain** - Cross-compilation environment using Gentoo crossdev
+- [ ] **Essential boot requirements** - Critical missing components for bootable system
+  - Device files creation (/dev/null, /dev/zero, /dev/console, /dev/tty*)
+  - Proper /etc/fstab configuration for rootfs and any additional partitions
+  - Login system configuration (getty, agetty, or console login)
+  - Network interface configuration (/etc/conf.d/net for OpenRC)
+  - Module loading configuration (/etc/modules-load.d/ or /etc/conf.d/modules)
+  - Firmware files for hardware (WiFi, audio, etc.)
+- [ ] **Init system configuration** - Complete OpenRC/systemd setup
+  - Enable essential services (networking, logging, device management)
+  - Configure runlevels and service dependencies
+  - Set up console/serial terminal services
+  - Configure udev rules for device management
+  - Add hardware-specific service configurations
+- [ ] **System essentials installation** - Missing critical packages
+  - Linux kernel modules (ensure RK_ROOTFS_INSTALL_MODULES works)
+  - Device management (udev/eudev, likely sys-fs/eudev for embedded)
+  - Logging system (syslog-ng, rsyslog, or journald)
+  - Filesystem utilities (e2fsprogs, dosfstools for boot partition)
+  - System utilities (procps, psmisc, which, less, etc.)
+  - Shell and basic tools (ensure proper shell linkage)
+- [ ] **Locale and system finalization** - Complete system setup
+  - Actually generate locales (locale-gen needs to run in target)
+  - Configure timezone data properly
+  - Set up proper terminal and console configuration
+  - Ensure shared libraries are properly linked
+  - Validate all essential binaries are executable
+- [ ] **Hardware-specific integration** - Device-specific requirements
+  - Audio firmware and ALSA configuration
+  - WiFi firmware installation and network configuration
+  - Display/framebuffer configuration for console
+  - Keyboard input device configuration
+  - RTC and hardware clock setup
+- [ ] **Kernel cross-compilation with crossdev** - Build kernel using Gentoo's cross-compilation environment
+  - Integrate kernel build with crossdev toolchain
+  - Apply genpatches during kernel build process
+  - Ensure proper ARM32 hardfp kernel configuration
+  - Test kernel modules compilation with crossdev
+- [ ] **Kernel testing and validation** - Verify crossdev-built kernel functionality
+  - Boot testing with crossdev-compiled kernel
+  - Hardware driver validation (display, keyboard, audio, WiFi)
+  - Performance comparison vs buildroot kernel
+  - Module loading and functionality testing
+- [ ] **Testing and validation** - Verify Gentoo builds work correctly
+
 ## 🚨 Critical Issues (Not Working)
 
 ### Audio System
@@ -52,6 +105,22 @@ This document tracks known issues, work-in-progress features, and planned improv
 - [x] ✅ **Terminal font size optimization** - Adjust console font for 320x320 display
 ### Boot Configuration
 - [ ] **Document Windows flashing process** - I don't use windows so I can't really test this as easily
+- [ ] **EFI boot system implementation** - Transition from traditional U-Boot direct kernel loading to EFI
+  - Research U-Boot EFI support on RK3506 platform
+  - Configure U-Boot with EFI boot capabilities
+  - Create EFI system partition (ESP) in image layout
+  - Implement EFI boot loader (systemd-boot or GRUB EFI)
+  - Test EFI binary loading and execution
+- [ ] **Image partitioning for EFI** - Redesign image layout to support EFI boot
+  - Add FAT32 EFI System Partition (ESP) to image
+  - Update partitioning scripts for ESP + rootfs layout
+  - Ensure proper partition flags and UUIDs for EFI
+  - Test boot process with new partition layout
+- [ ] **EFI integration with Gentoo** - Ensure Gentoo rootfs works with EFI boot
+  - Build EFI-capable kernel for Gentoo crossdev environment
+  - Configure initramfs if needed for EFI boot
+  - Test EFI boot with Gentoo rootfs
+  - Document EFI boot configuration for Gentoo
 - [x] ✅ ~~**Separate /home partition** - Split /home into dedicated partition to preserve user data~~
       (resolved with overlay partition from nekocharm upstream, further enhanced here)
 
@@ -95,6 +164,11 @@ This document tracks known issues, work-in-progress features, and planned improv
 ### Developer Documentation
 - [ ] **Device tree reference** - Document custom DT bindings
 - [ ] **Performance optimization** - Build optimization tips
+- [ ] **Binary package caching** - Implement Gentoo binary package preservation and reuse
+  - Save crossdev host binary packages to output directory
+  - Save target ARM32 binary packages to output directory  
+  - Restore saved packages on subsequent builds for faster compilation
+  - Exclude binary packages from cleanup operations
 
 ## 🔮 Future Enhancements
 

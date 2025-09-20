@@ -117,6 +117,7 @@ mkdir -p "$(pwd)/.ccache"
 # Run the container
 docker run -it --rm --name "$CONTAINER_NAME" \
     --user="$(id -u):$(id -g)" \
+    --cap-add SYS_ADMIN \
     "${DOCKER_VOLUMES[@]}" \
     "${DOCKER_ENV[@]}" \
     -w /opt/Lyra-SDK \

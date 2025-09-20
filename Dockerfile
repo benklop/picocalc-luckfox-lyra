@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     gcc-multilib \
     git \
+    gnupg \
     gpgv2 \
     libgmp-dev \
     libgucharmap-2-90-dev \
@@ -67,6 +68,7 @@ RUN apt-get update && apt-get install -y \
     qemu-user-static \
     rsync \
     ssh \
+    sudo \
     tar \
     texinfo \
     unzip \
@@ -93,7 +95,8 @@ RUN mkdir -p /opt/Lyra-SDK && \
     useradd -d /opt/Lyra-SDK -u $DOCKER_USERID $DOCKER_USER && \
     chown $DOCKER_USER:$DOCKER_USER /opt/Lyra-SDK && \
     chown $DOCKER_USER:$DOCKER_USER /opt/download && \
-    chown $DOCKER_USER:$DOCKER_USER /opt/ccache
+    chown $DOCKER_USER:$DOCKER_USER /opt/ccache && \
+    echo "$DOCKER_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 COPY ./docker/entrypoint.sh /entrypoint.sh
 

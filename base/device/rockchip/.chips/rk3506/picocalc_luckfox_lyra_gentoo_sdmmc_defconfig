@@ -1,0 +1,39 @@
+RK_ROOTFS=y
+RK_GENTOO=y
+RK_ROOTFS_SYSTEM_GENTOO=y
+# RK_BUILDROOT is not set
+# RK_YOCTO is not set
+RK_ROOTFS_HOSTNAME_CUSTOM=y
+RK_ROOTFS_HOSTNAME="luckfox"
+RK_ROOTFS_INSTALL_MODULES=y
+# RK_WIFIBT is not set
+# RK_ROOTFS_LOG_GUARDIAN is not set
+RK_EXTRA_FONTS_ENABLED_EN=y
+RK_UBOOT_CFG="picocalc_rk3506_luckfox"
+RK_AMP=y
+RK_AMP_RTT_TARGET=""
+RK_AMP_MCU_RTT_TARGET=""
+RK_AMP_FIT_ITS="amp_mcu.its"
+RK_KERNEL_CFG="picocalc_rk3506_luckfox_defconfig"
+RK_KERNEL_CFG_FRAGMENTS="picocalc-rk3506-*.config gentoo-embedded.config"
+RK_KERNEL_DTS_NAME="picocalc-rk3506g-luckfox-lyra"
+RK_BOOT_COMPRESSED=y
+RK_EXTRA_PARTITION_NUM=0
+RK_PARAMETER="parameter-lyra-sdmmc-amp.txt"
+RK_USE_FIT_IMG=y
+RK_NETWORK_CHECK=n
+
+# Gentoo specific configuration for ARM32 hardfp
+RK_GENTOO_STAGE3_VARIANT="armv7a_hardfp-openrc"
+RK_GENTOO_PROFILE="default/linux/arm/23.0/armv7a_hf"
+RK_GENTOO_USE_FLAGS="-X -gtk -qt5 -kde -gnome minimal embedded -systemd openrc"
+RK_GENTOO_KERNEL_GENPATCHES=y
+RK_GENTOO_KERNEL_CONFIG_FRAGMENT="gentoo-embedded.config"
+RK_GENTOO_INIT_OPENRC=y
+RK_GENTOO_INIT_SYSTEM="openrc"
+RK_GENTOO_EMERGE_OPTS="--jobs=2 --load-average=2 --quiet-build"
+RK_GENTOO_EXTRA_PACKAGES="app-editors/nano net-misc/dhcpcd sys-apps/usbutils app-shells/bash"
+RK_GENTOO_LOCALE="en_US.UTF-8"
+RK_GENTOO_TIMEZONE="UTC"
+RK_GENTOO_CCACHE=y
+RK_GENTOO_CCACHE_SIZE="1G"

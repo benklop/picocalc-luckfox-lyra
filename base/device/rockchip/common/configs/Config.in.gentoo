@@ -1,0 +1,169 @@
+#
+
+config RK_GENTOO_SUPPORTS
+	bool
+	default y if RK_CHIP_FAMILY = "rk3506" || RK_CHIP_FAMILY = "rk3566_rk3568" || \
+		RK_CHIP_FAMILY = "rk3588" || RK_CHIP_FAMILY = "rk3576" || \
+		RK_CHIP_FAMILY = "rk3399" || RK_CHIP_FAMILY = "rk3328"
+
+comment "Gentoo is not supported for this chip"
+	depends on !RK_GENTOO_SUPPORTS
+
+menuconfig RK_GENTOO
+	bool "Gentoo"
+	depends on RK_GENTOO_SUPPORTS
+	default n
+	help
+	  Enable Gentoo Linux rootfs support. This will download and 
+	  cross-compile a Gentoo stage3 tarball for the target architecture.
+
+if RK_GENTOO
+
+config RK_GENTOO_STAGE3_VARIANT
+	string "Stage3 variant"
+	default "armv7a_hardfp-openrc" if RK_ARCH = "arm"
+	default "arm64-musl-hardened" if RK_ARCH = "arm64"
+	help
+	  Gentoo stage3 variant to download. Common variants:
+	  - armv7a_hardfp-openrc (recommended for ARM32 hardfp like RK3506)
+	  - armv7a_hardfp-systemd-mergedusr (ARM32 with systemd)
+	  - arm64-musl-hardened (for ARM64)
+	  - arm64-systemd-mergedusr (ARM64 with systemd)
+
+config RK_GENTOO_STAGE3_URL
+	string "Custom Stage3 URL"
+	default ""
+	help
+	  Custom URL for stage3 tarball. If empty, will auto-download 
+	  the latest from Gentoo mirrors based on variant.
+	  
+	  For RK3506 (ARM32 hardfp), recent stage3:
+	  https://distfiles.gentoo.org/releases/arm/autobuilds/20250910T234958Z/stage3-armv7a_hardfp-openrc-20250910T234958Z.tar.xz
+
+config RK_GENTOO_PROFILE
+	string "Gentoo profile"
+	default "default/linux/arm/23.0/armv7a_hf" if RK_ARCH = "arm"
+	default "default/linux/arm64/23.0/musl/hardened" if RK_ARCH = "arm64"
+	help
+	  Gentoo profile to use. This determines compiler flags,
+	  USE flags, and other system defaults.
+	  
+	  For ARM32 hardfp (RK3506): default/linux/arm/17.0/armv7a
+
+config RK_GENTOO_USE_FLAGS
+	string "Custom USE flags"
+	default "-X -gtk -qt5 -kde -gnome minimal embedded -systemd openrc"
+	help
+	  Additional USE flags for embedded system optimization.
+	  Recommended: -X -gtk -qt5 -kde -gnome minimal embedded -systemd openrc
+
+config RK_GENTOO_KERNEL_GENPATCHES
+	bool "Apply genpatches to kernel"
+	default y
+	help
+	  Apply Gentoo's genpatches patchset to the kernel for
+	  better hardware support and security fixes.
+
+config RK_GENTOO_KERNEL_CONFIG_FRAGMENT
+	string "Kernel config fragment"
+	default "gentoo-embedded.config"
+	help
+	  Kernel configuration fragment for Gentoo-specific options.
+	  This will be applied in addition to the chip-specific configs.
+
+choice
+	prompt "Init system"
+	default RK_GENTOO_INIT_OPENRC
+
+config RK_GENTOO_INIT_OPENRC
+	bool "OpenRC"
+	help
+	  Use OpenRC init system (lightweight, embedded-friendly)
+
+config RK_GENTOO_INIT_SYSTEMD
+	bool "systemd"
+	help
+	  Use systemd init system (more features, higher resource usage)
+
+endchoice
+
+config RK_GENTOO_INIT_SYSTEM
+	string
+	default "openrc" if RK_GENTOO_INIT_OPENRC
+	default "systemd" if RK_GENTOO_INIT_SYSTEMD
+
+config RK_GENTOO_EMERGE_OPTS
+	string "Default emerge options"
+	default "--jobs=2 --load-average=2 --quiet-build"
+	help
+	  Default options passed to emerge during package compilation.
+	  Reduced defaults for ARM32 targets.
+
+config RK_GENTOO_EXTRA_PACKAGES
+	string "Extra packages to install"
+	default "app-editors/nano net-misc/dhcpcd sys-apps/usbutils app-shells/bash"
+	help
+	  Space-separated list of additional packages to emerge in the
+	  rootfs. Common embedded packages:
+	  - app-editors/nano (simple editor)
+	  - net-misc/dhcpcd (DHCP client)
+	  - sys-apps/usbutils (USB tools)
+	  - app-shells/bash (bash shell)
+	  - net-wireless/wireless-tools (WiFi tools)
+
+config RK_GENTOO_LOCALE
+	string "System locale"
+	default "en_US.UTF-8"
+	help
+	  Default system locale to generate and use.
+
+config RK_GENTOO_TIMEZONE
+	string "System timezone"
+	default "UTC"
+	help
+	  System timezone (e.g., America/New_York, Europe/London, UTC)
+
+config RK_GENTOO_ROOT_PASSWORD
+	string "Root password (empty for no password)"
+	default ""
+	help
+	  Root password for the system. Leave empty to disable password
+	  login (SSH key authentication only).
+
+config RK_GENTOO_PORTAGE_TMPDIR
+	string "Portage temporary directory"
+	default "/tmp/portage"
+	help
+	  Directory for portage temporary files during build.
+	  Use tmpfs mount for faster builds if you have enough RAM.
+
+config RK_GENTOO_DISTCC
+	bool "Enable distcc for distributed compilation"
+	default n
+	help
+	  Enable distcc to distribute compilation across multiple machines.
+	  Requires distcc hosts configuration.
+
+config RK_GENTOO_DISTCC_HOSTS
+	string "Distcc hosts"
+	depends on RK_GENTOO_DISTCC
+	default ""
+	help
+	  Space-separated list of distcc hosts (e.g., "host1/4 host2/8")
+
+config RK_GENTOO_CCACHE
+	bool "Enable ccache for compilation caching"
+	default y
+	help
+	  Enable ccache to cache compilation results for faster rebuilds.
+
+config RK_GENTOO_CCACHE_SIZE
+	string "ccache size"
+	depends on RK_GENTOO_CCACHE
+	default "1G"
+	help
+	  Maximum size for ccache storage.
+	  Reduced default for ARM32 builds.
+
+endif # Gentoo
+endmenuconfig # Gentoo

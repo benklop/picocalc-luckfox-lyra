@@ -1,0 +1,12 @@
+--- a/device/rockchip/common/scripts/kernel-helper	2025-09-18 21:13:45.233621727 -0400
++++ b/device/rockchip/common/scripts/kernel-helper	2025-09-18 21:16:10.642061505 -0400
+@@ -28,3 +28,9 @@
+ 	# Sudo to source code owner for Debian's post stage
+ 	export KMAKE="sudo -u #$RK_OWNER_UID $KMAKE"
+ fi
++
++# Apply genpatches if Gentoo is enabled
++if [ -z "$DRY_RUN" ]; then
++	source "$RK_SCRIPTS_DIR/apply-genpatches.sh"
++	apply_genpatches
++fi

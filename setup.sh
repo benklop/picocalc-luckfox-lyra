@@ -6,4 +6,8 @@ docker build --build-arg DOCKER_USER=$USER --build-arg DOCKER_USERID=$UID -t pic
 
 echo "Downloading and unpacking the SDK..."
 # Set up the initial defconfig (replaces ./build.sh lunch)
-./build.sh picocalc_luckfox_lyra_buildroot_sdmmc_defconfig
+if [ $# -gt 0 ]; then
+    ./build.sh "$@"
+else
+    ./build.sh lunch
+fi
