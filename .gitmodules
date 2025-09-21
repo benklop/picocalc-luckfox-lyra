@@ -1,0 +1,3 @@
+[submodule "base/gentoo/portage"]
+	path = base/gentoo/portage
+	url = git@github.com:benklop/gentoo-picocalc-ebuilds.git
