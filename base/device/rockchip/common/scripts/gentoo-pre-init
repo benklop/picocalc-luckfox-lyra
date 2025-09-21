@@ -1,0 +1,106 @@
+#!/bin/sh
+# Gentoo-specific pre-init script for PicoCalc
+# This script sets up an overlay filesystem to make the read-only rootfs appear writable
+# Adapted from the BuildRoot version for Gentoo Linux with OpenRC
+
+# Mount essential filesystems
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+# Remount root as read-write temporarily for setup
+mount -o remount,rw /
+
+# Create overlay mount point
+mkdir -p /overlay
+
+# Try to mount overlay by label first, fallback to device path
+OVERLAY_DEV=$(blkid | grep 'PARTLABEL="overlay"' | sed 's/:.*$//')
+
+if [ -z "$OVERLAY_DEV" ]; then
+    # Fallback: try to find the overlay partition by device path
+    # Look for the second partition on the SD card (assuming rootfs is first)
+    for dev in /dev/mmcblk0p3 /dev/mmcblk1p3 /dev/sda3; do
+        if [ -b "$dev" ]; then
+            OVERLAY_DEV="$dev"
+            echo "Using fallback overlay device: $OVERLAY_DEV"
+            break
+        fi
+    done
+fi
+
+# Try to mount the overlay partition, format if it fails
+if [ -n "$OVERLAY_DEV" ] && ! mount "$OVERLAY_DEV" /overlay 2>/dev/null; then
+    echo "Formatting overlay partition at $OVERLAY_DEV..."
+    # Format the partition as ext4 with a label
+    mkfs.ext4 -F -L overlay "$OVERLAY_DEV"
+    if [ $? -eq 0 ]; then
+        echo "Overlay partition formatted successfully"
+        mount "$OVERLAY_DEV" /overlay
+    else
+        echo "Failed to format overlay partition, using tmpfs"
+        mount -t tmpfs tmpfs /overlay
+    fi
+elif [ -z "$OVERLAY_DEV" ]; then
+    echo "No overlay device found, using tmpfs"
+    mount -t tmpfs tmpfs /overlay
+fi
+
+# Set up overlay directories
+mkdir -p /overlay/lower /overlay/upper /overlay/work /overlay/merged
+
+# Bind mount the current root as the lower layer
+mount --bind / /overlay/lower
+
+# Create the overlay filesystem
+mount -t overlay overlay -o noatime,lowerdir=/overlay/lower,upperdir=/overlay/upper,workdir=/overlay/work /overlay/merged
+
+# Create directory for the original root
+mkdir -p /overlay/merged/rom
+
+# Switch root to the overlay
+pivot_root /overlay/merged /overlay/merged/rom
+
+# Move essential mount points from the old root
+mount --move /rom/proc /proc
+mount --move /rom/sys /sys
+mount --move /rom/dev /dev
+
+# Move the overlay mount point so it's accessible from the new root
+mount --move /rom/overlay /overlay
+
+# Remount the original root as read-only for safety
+mount -o remount,ro /rom
+mount -o remount,ro /overlay/lower
+
+# Clean up the old /dev mount that might be lingering
+umount -l /rom/dev 2>/dev/null || true
+
+# Ensure /run directory exists for OpenRC
+mkdir -p /run
+
+# Set up basic device nodes that might be needed early
+# These are typically handled by devtmpfs, but we'll create them just in case
+if [ ! -c /dev/null ]; then
+    mknod /dev/null c 1 3
+    chmod 666 /dev/null
+fi
+
+if [ ! -c /dev/zero ]; then
+    mknod /dev/zero c 1 5
+    chmod 666 /dev/zero
+fi
+
+if [ ! -c /dev/random ]; then
+    mknod /dev/random c 1 8
+    chmod 644 /dev/random
+fi
+
+if [ ! -c /dev/urandom ]; then
+    mknod /dev/urandom c 1 9
+    chmod 644 /dev/urandom
+fi
+
+# Execute the real init system (OpenRC's init by default)
+# This will be /sbin/init which should start OpenRC
+exec /sbin/init "$@"

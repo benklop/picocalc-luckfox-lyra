@@ -1,5 +1,32 @@
 #!/bin/bash -e
 
+# mk-gentoo.sh - Gentoo Linux rootfs builder using crossdev
+#
+# This script implements the Gentoo crossdev approach for building
+# cross-compiled rootfs. Two methods are supported per the Gentoo crossdev wiki:
+#
+# 1. Manual Build Approach (Default, Recommended):
+#    - Creates empty target root
+#    - Uses crossdev to build cross-toolchain
+#    - Installs @system into target root via emerge --root-deps
+#    - Advantages: Full control, no unnecessary packages, latest builds
+#    - Set RK_GENTOO_MANUAL_BUILD=y (default)
+#
+# 2. Stage3 Tarball Approach:
+#    - Downloads and extracts pre-built stage3 tarball
+#    - Uses crossdev for additional packages
+#    - Advantages: Faster initial setup, known working base
+#    - Set RK_GENTOO_USE_STAGE3=y to enable
+#    - Configure TARGET_STAGE3_VARIANT for your needs
+#
+# Configuration Options:
+#   RK_GENTOO_USE_STAGE3=y|n    - Use stage3 tarball (default: n)
+#   RK_GENTOO_MANUAL_BUILD=y|n  - Use manual build (default: y)
+#   TARGET_STAGE3_VARIANT        - Stage3 variant when using stage3
+#
+# Reference: https://wiki.gentoo.org/wiki/Crossdev#Building_a_cross-emerge_environment
+#
+
 # Gentoo crossdev-based rootfs build script for Rockchip SDK
 # Based on https://wiki.gentoo.org/wiki/Crossdev
 # Uses x86_64 host with crossdev to cross-compile for ARM32 hardfp
@@ -56,6 +83,8 @@ Environment variables:
   RK_GENTOO_PROFILE          - Gentoo profile for target
   RK_GENTOO_USE_FLAGS        - USE flags for target
   RK_GENTOO_EXTRA_PACKAGES   - Extra packages to cross-compile
+  RK_GENTOO_USE_STAGE3       - Use stage3 tarball (y/n, default: n)
+  RK_GENTOO_MANUAL_BUILD     - Use manual build approach (y/n, default: y)
 EOF
 }
 
@@ -471,59 +500,110 @@ setup_target_system() {
 	
 	TARGET_ROOT="/usr/$CTARGET"
 	
-	# Prime the crossdev environment with target stage3 if not already done
-	if [ ! -d "$TARGET_ROOT/etc" ]; then
-		message "Priming crossdev environment with $TARGET_STAGE3_VARIANT stage3..."
-		
-		# Create target root directory
-		sudo mkdir -p "$TARGET_ROOT"
-		
-		# Download target stage3 for priming
-		MIRROR="https://distfiles.gentoo.org/releases"
-		
-		# Get latest target stage3 URL
-		message "Fetching latest $TARGET_STAGE3_VARIANT stage3 info..."
-		STAGE3_LIST_FILE="/tmp/latest-stage3-$TARGET_STAGE3_VARIANT.txt"
-		if ! wget -q "$MIRROR/$TARGET_ARCH_PATH/latest-stage3-$TARGET_STAGE3_VARIANT.txt" -O "$STAGE3_LIST_FILE"; then
-			error "Failed to download $TARGET_STAGE3_VARIANT stage3 list file"
-		fi
-		
-		message "Verifying PGP signature..."
-		LATEST_FILE=$(gpg --decrypt "$STAGE3_LIST_FILE" 2>/dev/null | \
-			grep '\.tar\.' | tail -n1 | cut -d' ' -f1)
-		rm -f "$STAGE3_LIST_FILE"
-		
-		if [ -z "$LATEST_FILE" ]; then
-			error "Could not determine latest $TARGET_STAGE3_VARIANT stage3 file"
-		fi
-		
-		message "Latest $TARGET_STAGE3_VARIANT stage3 file: $LATEST_FILE"
-		
-		STAGE3_URL="$MIRROR/$TARGET_ARCH_PATH/$LATEST_FILE"
-		STAGE3_FILE="$ROOTFS_OUTPUT_DIR/$(basename "$LATEST_FILE")"
-		
-		message "Downloading: $STAGE3_URL"
-		if [ ! -f "$STAGE3_FILE" ]; then
-			wget -c "$STAGE3_URL" -O "$STAGE3_FILE"
-		fi
-		
-		# Extract target stage3 to prime crossdev environment
-		message "Extracting $TARGET_STAGE3_VARIANT stage3 to $TARGET_ROOT..."
-		sudo tar xpf "$STAGE3_FILE" -C "$TARGET_ROOT" --xattrs-include='*.*' --numeric-owner
-		
-		message "Crossdev environment primed with $TARGET_STAGE3_VARIANT stage3"
-	else
-		message "Target environment already primed, skipping stage3 extraction"
+	# Determine which approach to use for base system setup
+	USE_STAGE3="${RK_GENTOO_USE_STAGE3:-n}"
+	MANUAL_BUILD="${RK_GENTOO_MANUAL_BUILD:-y}"
+	
+	# Ensure only one approach is selected
+	if [ "$USE_STAGE3" = "y" ] && [ "$MANUAL_BUILD" = "y" ]; then
+		warning "Both stage3 and manual build enabled, defaulting to manual build"
+		USE_STAGE3="n"
 	fi
+	
+	if [ "$USE_STAGE3" = "y" ]; then
+		setup_target_with_stage3
+	elif [ "$MANUAL_BUILD" = "y" ]; then
+		setup_target_manual_build
+	else
+		error "No target setup method selected. Set RK_GENTOO_USE_STAGE3=y or RK_GENTOO_MANUAL_BUILD=y"
+	fi
+	
+	# Common configuration for both approaches
+	setup_target_common_config
+	
+	message "Target system base configuration completed"
+}
+
+# Setup target system using stage3 tarball approach
+setup_target_with_stage3() {
+	message "Setting up target system using stage3 tarball approach..."
+	
+	# Check if stage3 has already been extracted
+	if [ -d "$TARGET_ROOT/etc" ] && [ -f "$TARGET_ROOT/etc/gentoo-release" ]; then
+		message "Stage3 already extracted to $TARGET_ROOT, skipping extraction"
+		return 0
+	fi
+	
+	message "Priming crossdev environment with $TARGET_STAGE3_VARIANT stage3..."
+	
+	# Create target root directory
+	sudo mkdir -p "$TARGET_ROOT"
+	
+	# Download target stage3 for priming
+	MIRROR="https://distfiles.gentoo.org/releases"
+	
+	# Get latest target stage3 URL
+	message "Fetching latest $TARGET_STAGE3_VARIANT stage3 info..."
+	STAGE3_LIST_FILE="/tmp/latest-stage3-$TARGET_STAGE3_VARIANT.txt"
+	if ! wget -q "$MIRROR/$TARGET_ARCH_PATH/latest-stage3-$TARGET_STAGE3_VARIANT.txt" -O "$STAGE3_LIST_FILE"; then
+		error "Failed to download $TARGET_STAGE3_VARIANT stage3 list file"
+	fi
+	
+	message "Verifying PGP signature..."
+	LATEST_FILE=$(gpg --decrypt "$STAGE3_LIST_FILE" 2>/dev/null | \
+		grep '\.tar\.' | tail -n1 | cut -d' ' -f1)
+	rm -f "$STAGE3_LIST_FILE"
+	
+	if [ -z "$LATEST_FILE" ]; then
+		error "Could not determine latest $TARGET_STAGE3_VARIANT stage3 file"
+	fi
+	
+	message "Latest $TARGET_STAGE3_VARIANT stage3 file: $LATEST_FILE"
+	
+	STAGE3_URL="$MIRROR/$TARGET_ARCH_PATH/$LATEST_FILE"
+	STAGE3_FILE="$ROOTFS_OUTPUT_DIR/$(basename "$LATEST_FILE")"
+	
+	# Download stage3 if not already present
+	if [ ! -f "$STAGE3_FILE" ]; then
+		message "Downloading: $STAGE3_URL"
+		wget -c "$STAGE3_URL" -O "$STAGE3_FILE"
+	else
+		message "Stage3 file already exists: $STAGE3_FILE"
+	fi
+	
+	# Extract target stage3 to target root
+	# Use official crossdev recommended options: --exclude=dev --skip-old-files
+	message "Extracting $TARGET_STAGE3_VARIANT stage3 to $TARGET_ROOT..."
+	sudo tar xpf "$STAGE3_FILE" -C "$TARGET_ROOT" --xattrs-include='*.*' --numeric-owner --exclude=dev --skip-old-files
+	
+	message "Stage3 tarball extracted successfully"
+}
+
+# Setup target system using manual build approach
+setup_target_manual_build() {
+	message "Setting up target system using manual build..."
+	
+	# Create minimal target root structure if it doesn't exist
+	if [ ! -d "$TARGET_ROOT" ]; then
+		sudo mkdir -p "$TARGET_ROOT"
+		message "Created target root directory: $TARGET_ROOT"
+	fi
+	
+	# The manual build will be done in cross_compile_packages function
+	# This function just ensures the target root exists and is ready
+	message "Target root prepared for manual build approach"
+}
+
+# Common target configuration for both approaches
+setup_target_common_config() {
+	message "Applying common target system configuration..."
+	# Common target configuration for both approaches
+setup_target_common_config() {
+	message "Applying common target system configuration..."
 	
 	# Set target profile
 	if [ -n "$RK_GENTOO_PROFILE" ]; then
 		message "Setting target profile to $RK_GENTOO_PROFILE"
-		
-		# List available profiles first
-		message "Available ARM profiles:"
-		sudo chroot . /bin/bash -c "PORTAGE_CONFIGROOT=$TARGET_ROOT eselect profile list | grep arm"
-		
 		sudo chroot . /bin/bash -c "PORTAGE_CONFIGROOT=$TARGET_ROOT eselect profile set $RK_GENTOO_PROFILE"
 	fi
 	
@@ -535,7 +615,6 @@ setup_target_system() {
 	# Create target-specific make.conf
 	cat <<EOF | sudo tee "usr/$CTARGET/etc/portage/make.conf"
 # Cross-compilation make.conf for $CTARGET
-# Generated by Rockchip SDK
 
 # Architecture-specific settings
 CHOST="$CTARGET"
@@ -616,8 +695,7 @@ EOF
 	else
 		warning "Kernel sources not found at /opt/Lyra-SDK/kernel-6.1"
 	fi
-
-	message "Target system base configuration completed"
+}
 }
 
 # Cross-compile packages for target
@@ -631,10 +709,38 @@ cross_compile_packages() {
 	CROSS_EMERGE="$CTARGET-emerge"
 	TARGET_ROOT="/usr/$CTARGET"
 	
-	# Install base layout and glibc
-	sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT USE=build $CROSS_EMERGE -v1 --noreplace baselayout"
-	sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT $CROSS_EMERGE -v1 --noreplace sys-libs/glibc"
-	sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT $CROSS_EMERGE -v1 --noreplace @system"
+	# Determine which approach was used for base system setup
+	USE_STAGE3="${RK_GENTOO_USE_STAGE3:-n}"
+	MANUAL_BUILD="${RK_GENTOO_MANUAL_BUILD:-y}"
+	
+	if [ "$MANUAL_BUILD" = "y" ] && [ "$USE_STAGE3" != "y" ]; then
+		# Manual build approach - build base system packages manually
+		message "Using manual build approach as recommended by Gentoo crossdev documentation..."
+		
+		# Install base layout first with USE=build (minimal build for bootstrapping)
+		message "Installing baselayout with USE=build..."
+		sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT USE=build $CROSS_EMERGE -v1 --noreplace baselayout"
+		
+		# Install glibc (crossdev should have already built this, but ensure it's in target)
+		message "Installing glibc..."
+		sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT $CROSS_EMERGE -v1 --noreplace sys-libs/glibc"
+		
+		# Install @system set
+		message "Installing @system set..."
+		sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT $CROSS_EMERGE -v1 --noreplace @system"
+		
+	elif [ "$USE_STAGE3" = "y" ]; then
+		# Stage3 approach - stage3 provides base system, just ensure @system is complete
+		message "Using stage3 tarball approach - checking @system completeness..."
+		
+		# With stage3, we might still need to install some @system packages that weren't in stage3
+		# or got masked/filtered out. Use --noreplace to avoid rebuilding existing packages.
+		message "Ensuring @system is complete..."
+		sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT $CROSS_EMERGE -v1 --noreplace @system"
+		
+	else
+		error "No valid base system approach configured"
+	fi
 	
 	# Install extra packages if specified
 	if [ -n "$RK_GENTOO_EXTRA_PACKAGES" ]; then
@@ -697,6 +803,21 @@ create_target_rootfs() {
 		message "Disabling root password..."
 		# Lock root account by prefixing password with !
 		sudo sed -i 's/^root:\([^:]*\):/root:!\1:/' "$ROOTFS_OUTPUT_DIR/etc/shadow" || true
+	fi
+	
+	# Install Gentoo-specific pre_init script for overlay filesystem support
+	message "Installing Gentoo pre_init script..."
+	GENTOO_PRE_INIT="$RK_SCRIPTS_DIR/gentoo-pre-init"
+	if [ -f "$GENTOO_PRE_INIT" ]; then
+		# Create /sbin directory if it doesn't exist
+		sudo mkdir -p "$ROOTFS_OUTPUT_DIR/sbin"
+		# Install to /sbin/pre_init to match bootargs (init=/sbin/pre_init)
+		sudo cp "$GENTOO_PRE_INIT" "$ROOTFS_OUTPUT_DIR/sbin/pre_init"
+		sudo chmod +x "$ROOTFS_OUTPUT_DIR/sbin/pre_init"
+		message "Installed pre_init script to /sbin/pre_init"
+	else
+		warning "Gentoo pre_init script not found at $GENTOO_PRE_INIT"
+		warning "Overlay filesystem support may not work properly"
 	fi
 	
 	message "Target rootfs created"
@@ -790,6 +911,22 @@ EOF
 # Main build function - crossdev-based approach
 build_gentoo() {
 	message "Starting Gentoo crossdev build for $RK_ARCH..."
+	
+	# Show configuration
+	USE_STAGE3="${RK_GENTOO_USE_STAGE3:-n}"
+	MANUAL_BUILD="${RK_GENTOO_MANUAL_BUILD:-y}"
+	
+	message "Build configuration:"
+	message "  Target: $CTARGET"
+	message "  Use Stage3: $USE_STAGE3"
+	message "  Manual Build: $MANUAL_BUILD"
+	if [ "$USE_STAGE3" = "y" ]; then
+		message "  Stage3 Variant: $TARGET_STAGE3_VARIANT"
+		message "  Following Gentoo crossdev documentation: Stage3 tarball approach"
+	else
+		message "  Following Gentoo crossdev documentation: Manual build approach (recommended)"
+	fi
+	echo
 	
 	check_gentoo_deps
 	setup_host_environment
