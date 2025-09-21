@@ -1,0 +1,34 @@
+# /etc/inittab: This file describes how the INIT process should set up
+#               the system in a certain run-level.
+
+# System initialization, mount local filesystems, etc.
+si::sysinit:/sbin/openrc sysinit
+
+# Further system initialization, brings up the boot runlevel.
+rc::bootwait:/sbin/openrc boot
+
+# Default runlevel
+id:3:initdefault:
+
+# Runlevel switching
+l0:0:wait:/sbin/openrc shutdown
+l1:1:wait:/sbin/openrc single
+l2:2:wait:/sbin/openrc nonetwork
+l3:3:wait:/sbin/openrc default
+l4:4:wait:/sbin/openrc default
+l5:5:wait:/sbin/openrc default
+l6:6:wait:/sbin/openrc reboot
+
+# Main console - PicoCalc serial console
+c1:12345:respawn:/sbin/agetty --autologin root --noclear --keep-baud 1500000,115200,38400,9600 ttyFIQ0 vt100
+
+# Fallback consoles (if available)
+c2:2345:respawn:/sbin/agetty 1500000 tty1 linux
+c3:2345:respawn:/sbin/agetty 38400 tty2 linux
+
+# What to do at the "Three Finger Salute".
+ca:12345:ctrlaltdel:/sbin/shutdown -r now
+
+# System shutdown/restart
+su:S:once:/sbin/sulogin
+s1:S:wait:/sbin/openrc single

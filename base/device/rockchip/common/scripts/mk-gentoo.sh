@@ -88,6 +88,26 @@ Environment variables:
 EOF
 }
 
+# Copy overlay files to target rootfs
+copy_overlay_files() {
+	local overlay_dir="$RK_SDK_DIR/gentoo/overlay"
+	
+	message "Copying overlay files from $overlay_dir..."
+	
+	if [ ! -d "$overlay_dir" ]; then
+		warning "Overlay directory not found: $overlay_dir"
+		return 0
+	fi
+	
+	# Copy all files from overlay directory preserving structure
+	if [ -n "$(ls -A "$overlay_dir" 2>/dev/null)" ]; then
+		sudo cp -r "$overlay_dir"/* "$ROOTFS_OUTPUT_DIR/"
+		message "Overlay files copied successfully"
+	else
+		message "No overlay files to copy"
+	fi
+}
+
 # Check dependencies
 check_gentoo_deps() {
 	message "Checking Gentoo crossdev dependencies..."
@@ -296,6 +316,8 @@ configure_gentoo() {
 	# Update portage tree
 	message "Syncing portage tree..."
 	sudo chroot . /bin/bash -c "emerge-webrsync"
+
+
 	
 	# Set locale
 	LOCALE="${RK_GENTOO_LOCALE:-en_US.UTF-8}"
@@ -356,66 +378,6 @@ install_packages() {
 	esac
 }
 
-# Build kernel with genpatches
-build_kernel_genpatches() {
-	message "Building kernel with genpatches..."
-	
-	# This function would integrate with the existing kernel build system
-	# but apply genpatches first
-	
-	if [ "${RK_GENTOO_KERNEL_GENPATCHES:-y}" = "y" ]; then
-		message "Applying genpatches is handled by the main kernel build"
-		# The actual genpatches application would be handled in mk-kernel.sh
-		# This is just a placeholder for the gentoo-specific kernel setup
-	fi
-	
-	# Create kernel config fragment for Gentoo
-	KERNEL_CONFIG_FRAGMENT="$RK_CHIP_DIR/${RK_GENTOO_KERNEL_CONFIG_FRAGMENT:-gentoo-embedded.config}"
-	if [ ! -f "$KERNEL_CONFIG_FRAGMENT" ]; then
-		message "Creating Gentoo kernel config fragment..."
-		cat <<EOF > "$KERNEL_CONFIG_FRAGMENT"
-# Gentoo-specific kernel configuration for ARM32
-# Enable features commonly needed for Gentoo systems
-
-# General Gentoo requirements
-CONFIG_DEVTMPFS=y
-CONFIG_DEVTMPFS_MOUNT=y
-CONFIG_TMPFS=y
-CONFIG_TMPFS_POSIX_ACL=y
-CONFIG_TMPFS_XATTR=y
-
-# systemd requirements (if using systemd)
-CONFIG_CGROUPS=y
-CONFIG_INOTIFY_USER=y
-CONFIG_SIGNALFD=y
-CONFIG_TIMERFD=y
-CONFIG_EPOLL=y
-CONFIG_NET=y
-CONFIG_SYSFS=y
-CONFIG_PROC_FS=y
-CONFIG_FHANDLE=y
-
-# OpenRC requirements
-CONFIG_SYSVIPC=y
-
-# Common embedded features
-CONFIG_SQUASHFS=y
-CONFIG_SQUASHFS_XATTR=y
-CONFIG_SQUASHFS_ZLIB=y
-CONFIG_OVERLAY_FS=y
-
-# ARM32 specific optimizations
-CONFIG_ARM_PATCH_PHYS_VIRT=y
-CONFIG_HIGHMEM=y
-CONFIG_ARM_THUMB=y
-CONFIG_AEABI=y
-CONFIG_VFP=y
-CONFIG_VFPv3=y
-CONFIG_NEON=y
-EOF
-	fi
-}
-
 # Finalize rootfs
 finalize_rootfs() {
 	message "Finalizing Gentoo rootfs..."
@@ -456,6 +418,68 @@ finalize_rootfs() {
 	message "Gentoo rootfs build completed: $ROOTFS_OUTPUT_DIR"
 }
 
+# Setup custom portage repository from base/gentoo/portage
+setup_custom_portage_repository() {
+	message "Setting up custom portage repository..."
+	
+	local custom_repo_name="picocalc-overlay"
+	local custom_repo_path="/var/db/repos/$custom_repo_name"
+	local source_repo_path="$RK_SDK_DIR/gentoo/portage"
+	
+	# Check if our custom portage directory exists
+	if [ ! -d "$source_repo_path" ]; then
+		warning "Custom portage repository not found at $source_repo_path"
+		return 0
+	fi
+	
+	# Create the custom repository in the chroot
+	message "Creating custom repository '$custom_repo_name'..."
+	sudo chroot . /bin/bash -c "if [ ! -d $custom_repo_path ]; then eselect repository create $custom_repo_name; else echo 'Custom repository $custom_repo_name already exists'; fi"
+	
+	# Copy our custom portage content into the repository
+	message "Copying custom packages from $source_repo_path to $custom_repo_path..."
+	
+	# Preserve existing metadata if present
+	if [ -f "$custom_repo_path/metadata/layout.conf" ]; then
+		sudo cp "$custom_repo_path/metadata/layout.conf" "/tmp/layout.conf.backup"
+	fi
+	
+	sudo cp -r "$source_repo_path"/* "$custom_repo_path/"
+	
+	# Restore metadata if we backed it up
+	if [ -f "/tmp/layout.conf.backup" ]; then
+		sudo mv "/tmp/layout.conf.backup" "$custom_repo_path/metadata/layout.conf"
+	fi
+	
+	# Ensure proper ownership within chroot
+	sudo chroot . /bin/bash -c "chown -R portage:portage $custom_repo_path"
+	
+	# Create metadata layout if it doesn't exist
+	if [ ! -f "$custom_repo_path/metadata/layout.conf" ]; then
+		sudo tee "$custom_repo_path/metadata/layout.conf" > /dev/null <<EOF
+masters = gentoo
+repo-name = $custom_repo_name
+auto-sync = false
+EOF
+	fi
+	
+	# Check and update manifests for our custom packages if needed
+	message "Checking manifests for custom packages..."
+	
+	# Only regenerate manifests if tools are available and there are missing manifests
+	if sudo chroot . /bin/bash -c "command -v pkgdev >/dev/null 2>&1"; then
+		message "Using pkgdev to verify/update manifests..."
+		sudo chroot . /bin/bash -c "cd $custom_repo_path && pkgdev manifest" || warning "Manifest verification failed, continuing anyway"
+	elif sudo chroot . /bin/bash -c "command -v repoman >/dev/null 2>&1"; then
+		message "Using repoman to verify/update manifests..."
+		sudo chroot . /bin/bash -c "cd $custom_repo_path && repoman manifest" || warning "Manifest verification failed, continuing anyway"
+	else
+		message "No manifest tools available, using existing manifests"
+	fi
+	
+	message "Custom portage repository '$custom_repo_name' setup completed"
+}
+
 # Setup crossdev toolchain in host environment
 setup_crossdev_toolchain() {
 	message "Setting up crossdev toolchain for $CTARGET..."
@@ -483,6 +507,9 @@ setup_crossdev_toolchain() {
 	# Create crossdev overlay if it doesn't exist
 	message "Creating crossdev overlay..."
 	sudo chroot . /bin/bash -c "if [ ! -d /var/db/repos/crossdev ]; then eselect repository create crossdev; else echo 'crossdev repository already exists'; fi"
+	
+	# Setup custom portage repository from base/gentoo/portage
+	setup_custom_portage_repository
 	
 	# Build cross-compilation toolchain
 	message "Building cross-compilation toolchain for $CTARGET..."
@@ -820,88 +847,8 @@ create_target_rootfs() {
 		warning "Overlay filesystem support may not work properly"
 	fi
 	
-	# Create fstab optimized for overlay filesystem setup
-	message "Creating overlay-optimized fstab..."
-	sudo tee "$ROOTFS_OUTPUT_DIR/etc/fstab" > /dev/null <<EOF
-# /etc/fstab: static file system information for PicoCalc Gentoo
-#
-# NOTE: This system uses an overlay filesystem setup via pre_init script.
-# The root filesystem is mounted read-only and overlaid with a writable layer.
-# Most mount points are handled by the pre_init script, not by fstab.
-#
-# <fs>                  <mountpoint>    <type>      <opts>              <dump/pass>
-
-# Essential virtual filesystems (these should not conflict with pre_init)
-proc                    /proc           proc        defaults            0 0
-sysfs                   /sys            sysfs       defaults            0 0
-devtmpfs                /dev            devtmpfs    mode=0755,nosuid    0 0
-devpts                  /dev/pts        devpts      gid=5,mode=620      0 0
-tmpfs                   /dev/shm        tmpfs       defaults            0 0
-tmpfs                   /run            tmpfs       mode=0755,nosuid,nodev 0 0
-tmpfs                   /tmp            tmpfs       mode=1777,nosuid,nodev 0 0
-
-# Optional: overlay partition mount (uncomment if you want to access overlay directly)
-# PARTLABEL=overlay     /mnt/overlay    ext4        defaults,noauto     0 0
-
-# Optional: original rootfs mount (uncomment if you want to access original rootfs)
-# PARTLABEL=rootfs      /mnt/rootfs-ro  ext4        ro,noauto           0 0
-
-# Note: The actual root (/) is handled by the overlay filesystem in pre_init
-# and should not be listed here to avoid conflicts.
-EOF
-	
-	# Configure serial console for PicoCalc
-	message "Configuring serial console on ttyFIQ0..."
-	
-	# Enable serial console on ttyFIQ0 (PicoCalc's main console)
-	sudo tee "$ROOTFS_OUTPUT_DIR/etc/conf.d/agetty.ttyFIQ0" > /dev/null <<EOF
-# Configuration for agetty on ttyFIQ0 (PicoCalc serial console)
-# This is the main serial console for the PicoCalc device
-agetty_args="--autologin root --noclear --keep-baud 115200,38400,9600 ttyFIQ0 vt100"
-EOF
-	
-	# Create inittab entries for serial console
-	if [ ! -f "$ROOTFS_OUTPUT_DIR/etc/inittab" ]; then
-		sudo tee "$ROOTFS_OUTPUT_DIR/etc/inittab" > /dev/null <<EOF
-# /etc/inittab: This file describes how the INIT process should set up
-#               the system in a certain run-level.
-
-# System initialization, mount local filesystems, etc.
-si::sysinit:/sbin/openrc sysinit
-
-# Further system initialization, brings up the boot runlevel.
-rc::bootwait:/sbin/openrc boot
-
-# Runlevel switching
-l0:0:wait:/sbin/openrc shutdown
-l1:1:wait:/sbin/openrc single
-l2:2:wait:/sbin/openrc nonetwork
-l3:3:wait:/sbin/openrc default
-l4:4:wait:/sbin/openrc default
-l5:5:wait:/sbin/openrc default
-l6:6:wait:/sbin/openrc reboot
-
-# Main console - PicoCalc serial console
-c1:12345:respawn:/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 ttyFIQ0 vt100
-
-# Fallback consoles (if available)
-c2:2345:respawn:/sbin/agetty 38400 tty1 linux
-c3:2345:respawn:/sbin/agetty 38400 tty2 linux
-
-# What to do at the "Three Finger Salute".
-ca:12345:ctrlaltdel:/sbin/shutdown -r now
-
-# System shutdown/restart
-su:S:once:/sbin/sulogin
-s1:S:wait:/sbin/openrc single
-EOF
-	else
-		# Add ttyFIQ0 entry to existing inittab if not already present
-		if ! sudo grep -q "ttyFIQ0" "$ROOTFS_OUTPUT_DIR/etc/inittab"; then
-			echo "# PicoCalc serial console" | sudo tee -a "$ROOTFS_OUTPUT_DIR/etc/inittab"
-			echo "c1:12345:respawn:/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 ttyFIQ0 vt100" | sudo tee -a "$ROOTFS_OUTPUT_DIR/etc/inittab"
-		fi
-	fi
+	# Copy overlay files to rootfs
+	copy_overlay_files
 	
 	# Configure basic OpenRC services
 	message "Configuring OpenRC services..."

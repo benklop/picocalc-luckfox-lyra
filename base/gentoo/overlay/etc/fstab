@@ -1,0 +1,25 @@
+# /etc/fstab: static file system information for PicoCalc Gentoo
+#
+# NOTE: This system uses an overlay filesystem setup via pre_init script.
+# The root filesystem is mounted read-only and overlaid with a writable layer.
+# Most mount points are handled by the pre_init script, not by fstab.
+#
+# <fs>                  <mountpoint>    <type>      <opts>              <dump/pass>
+
+# Essential virtual filesystems (these should not conflict with pre_init)
+proc                    /proc           proc        defaults            0 0
+sysfs                   /sys            sysfs       defaults            0 0
+devtmpfs                /dev            devtmpfs    mode=0755,nosuid    0 0
+devpts                  /dev/pts        devpts      gid=5,mode=620      0 0
+tmpfs                   /dev/shm        tmpfs       defaults            0 0
+tmpfs                   /run            tmpfs       mode=0755,nosuid,nodev 0 0
+tmpfs                   /tmp            tmpfs       mode=1777,nosuid,nodev 0 0
+
+# Optional: overlay partition mount (uncomment if you want to access overlay directly)
+# PARTLABEL=overlay     /mnt/overlay    ext4        defaults,noauto     0 0
+
+# Optional: original rootfs mount (uncomment if you want to access original rootfs)
+# PARTLABEL=rootfs      /mnt/rootfs-ro  ext4        ro,noauto           0 0
+
+# Note: The actual root (/) is handled by the overlay filesystem in pre_init
+# and should not be listed here to avoid conflicts.

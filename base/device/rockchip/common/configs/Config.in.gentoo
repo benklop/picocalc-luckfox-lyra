@@ -64,13 +64,6 @@ config RK_GENTOO_KERNEL_GENPATCHES
 	  Apply Gentoo's genpatches patchset to the kernel for
 	  better hardware support and security fixes.
 
-config RK_GENTOO_KERNEL_CONFIG_FRAGMENT
-	string "Kernel config fragment"
-	default "gentoo-embedded.config"
-	help
-	  Kernel configuration fragment for Gentoo-specific options.
-	  This will be applied in addition to the chip-specific configs.
-
 choice
 	prompt "Init system"
 	default RK_GENTOO_INIT_OPENRC

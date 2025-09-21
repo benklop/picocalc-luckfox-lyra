@@ -28,7 +28,6 @@ RK_GENTOO_STAGE3_VARIANT="armv7a_hardfp-openrc"
 RK_GENTOO_PROFILE="default/linux/arm/23.0/armv7a_hf"
 RK_GENTOO_USE_FLAGS="-X -gtk -qt5 -kde -gnome minimal embedded -systemd openrc"
 RK_GENTOO_KERNEL_GENPATCHES=y
-RK_GENTOO_KERNEL_CONFIG_FRAGMENT="gentoo-embedded.config"
 RK_GENTOO_INIT_OPENRC=y
 RK_GENTOO_INIT_SYSTEM="openrc"
 RK_GENTOO_EMERGE_OPTS="--jobs=2 --load-average=2 --quiet-build"

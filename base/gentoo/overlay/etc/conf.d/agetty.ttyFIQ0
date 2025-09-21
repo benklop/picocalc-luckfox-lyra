@@ -1,0 +1,3 @@
+# Configuration for agetty on ttyFIQ0 (PicoCalc serial console)
+# This is the main serial console for the PicoCalc device
+agetty_args="--autologin root --noclear --keep-baud 115200,38400,9600 ttyFIQ0 vt100"
