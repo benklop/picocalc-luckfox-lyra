@@ -820,6 +820,112 @@ create_target_rootfs() {
 		warning "Overlay filesystem support may not work properly"
 	fi
 	
+	# Create fstab optimized for overlay filesystem setup
+	message "Creating overlay-optimized fstab..."
+	sudo tee "$ROOTFS_OUTPUT_DIR/etc/fstab" > /dev/null <<EOF
+# /etc/fstab: static file system information for PicoCalc Gentoo
+#
+# NOTE: This system uses an overlay filesystem setup via pre_init script.
+# The root filesystem is mounted read-only and overlaid with a writable layer.
+# Most mount points are handled by the pre_init script, not by fstab.
+#
+# <fs>                  <mountpoint>    <type>      <opts>              <dump/pass>
+
+# Essential virtual filesystems (these should not conflict with pre_init)
+proc                    /proc           proc        defaults            0 0
+sysfs                   /sys            sysfs       defaults            0 0
+devtmpfs                /dev            devtmpfs    mode=0755,nosuid    0 0
+devpts                  /dev/pts        devpts      gid=5,mode=620      0 0
+tmpfs                   /dev/shm        tmpfs       defaults            0 0
+tmpfs                   /run            tmpfs       mode=0755,nosuid,nodev 0 0
+tmpfs                   /tmp            tmpfs       mode=1777,nosuid,nodev 0 0
+
+# Optional: overlay partition mount (uncomment if you want to access overlay directly)
+# PARTLABEL=overlay     /mnt/overlay    ext4        defaults,noauto     0 0
+
+# Optional: original rootfs mount (uncomment if you want to access original rootfs)
+# PARTLABEL=rootfs      /mnt/rootfs-ro  ext4        ro,noauto           0 0
+
+# Note: The actual root (/) is handled by the overlay filesystem in pre_init
+# and should not be listed here to avoid conflicts.
+EOF
+	
+	# Configure serial console for PicoCalc
+	message "Configuring serial console on ttyFIQ0..."
+	
+	# Enable serial console on ttyFIQ0 (PicoCalc's main console)
+	sudo tee "$ROOTFS_OUTPUT_DIR/etc/conf.d/agetty.ttyFIQ0" > /dev/null <<EOF
+# Configuration for agetty on ttyFIQ0 (PicoCalc serial console)
+# This is the main serial console for the PicoCalc device
+agetty_args="--autologin root --noclear --keep-baud 115200,38400,9600 ttyFIQ0 vt100"
+EOF
+	
+	# Create inittab entries for serial console
+	if [ ! -f "$ROOTFS_OUTPUT_DIR/etc/inittab" ]; then
+		sudo tee "$ROOTFS_OUTPUT_DIR/etc/inittab" > /dev/null <<EOF
+# /etc/inittab: This file describes how the INIT process should set up
+#               the system in a certain run-level.
+
+# System initialization, mount local filesystems, etc.
+si::sysinit:/sbin/openrc sysinit
+
+# Further system initialization, brings up the boot runlevel.
+rc::bootwait:/sbin/openrc boot
+
+# Runlevel switching
+l0:0:wait:/sbin/openrc shutdown
+l1:1:wait:/sbin/openrc single
+l2:2:wait:/sbin/openrc nonetwork
+l3:3:wait:/sbin/openrc default
+l4:4:wait:/sbin/openrc default
+l5:5:wait:/sbin/openrc default
+l6:6:wait:/sbin/openrc reboot
+
+# Main console - PicoCalc serial console
+c1:12345:respawn:/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 ttyFIQ0 vt100
+
+# Fallback consoles (if available)
+c2:2345:respawn:/sbin/agetty 38400 tty1 linux
+c3:2345:respawn:/sbin/agetty 38400 tty2 linux
+
+# What to do at the "Three Finger Salute".
+ca:12345:ctrlaltdel:/sbin/shutdown -r now
+
+# System shutdown/restart
+su:S:once:/sbin/sulogin
+s1:S:wait:/sbin/openrc single
+EOF
+	else
+		# Add ttyFIQ0 entry to existing inittab if not already present
+		if ! sudo grep -q "ttyFIQ0" "$ROOTFS_OUTPUT_DIR/etc/inittab"; then
+			echo "# PicoCalc serial console" | sudo tee -a "$ROOTFS_OUTPUT_DIR/etc/inittab"
+			echo "c1:12345:respawn:/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 ttyFIQ0 vt100" | sudo tee -a "$ROOTFS_OUTPUT_DIR/etc/inittab"
+		fi
+	fi
+	
+	# Configure basic OpenRC services
+	message "Configuring OpenRC services..."
+	
+	# Enable basic system services
+	sudo mkdir -p "$ROOTFS_OUTPUT_DIR/etc/runlevels/default"
+	sudo mkdir -p "$ROOTFS_OUTPUT_DIR/etc/runlevels/boot"
+	
+	# Create symlinks for essential services (if they exist)
+	BOOT_SERVICES="udev hwclock modules mtab fsck root swap localmount"
+	DEFAULT_SERVICES="netmount local dhcpcd"
+	
+	for service in $BOOT_SERVICES; do
+		if [ -f "$ROOTFS_OUTPUT_DIR/etc/init.d/$service" ]; then
+			sudo ln -sf "/etc/init.d/$service" "$ROOTFS_OUTPUT_DIR/etc/runlevels/boot/$service" 2>/dev/null || true
+		fi
+	done
+	
+	for service in $DEFAULT_SERVICES; do
+		if [ -f "$ROOTFS_OUTPUT_DIR/etc/init.d/$service" ]; then
+			sudo ln -sf "/etc/init.d/$service" "$ROOTFS_OUTPUT_DIR/etc/runlevels/default/$service" 2>/dev/null || true
+		fi
+	done
+
 	message "Target rootfs created"
 }
 
