@@ -43,6 +43,8 @@ ROOTFS_OUTPUT_DIR="${2:-$RK_SDK_DIR/output/gentoo}"
 # Crossdev configuration
 GENTOO_HOST_DIR="$RK_SDK_DIR/gentoo-host"  # x86_64 build environment
 
+CUSTOM_REPO_NAME="picocalc-ebuilds"
+
 # Load configuration
 if [ -r "$RK_CONFIG" ]; then
 	source "$RK_CONFIG"
@@ -290,140 +292,14 @@ EOF
 	# Setup repositories
 	sudo mkdir -p etc/portage/repos.conf
 	sudo cp usr/share/portage/config/repos.conf etc/portage/repos.conf/gentoo.conf
-	
-	# Setup package.use directory
-	sudo mkdir -p etc/portage/package.use
-	
-	# Create package.use for embedded optimizations
-	cat <<EOF | sudo tee etc/portage/package.use/embedded
-# Embedded ARM32 system optimizations
-sys-apps/busybox static
-sys-apps/util-linux static-libs
-sys-fs/udev hwdb
-net-misc/dhcpcd embedded ipv6
-# ARM32 specific optimizations
-sys-devel/gcc -fortran -go
-sys-libs/glibc -multilib
-EOF
-}
-
-# Configure Gentoo system
-configure_gentoo() {
-	message "Configuring Gentoo system..."
-	
-	cd "$GENTOO_WORK_DIR"
-	
-	# Update portage tree
-	message "Syncing portage tree..."
-	sudo chroot . /bin/bash -c "emerge-webrsync"
-
-
-	
-	# Set locale
-	LOCALE="${RK_GENTOO_LOCALE:-en_US.UTF-8}"
-	echo "$LOCALE UTF-8" | sudo tee etc/locale.gen
-	sudo chroot . /bin/bash -c "locale-gen"
-	sudo chroot . /bin/bash -c "eselect locale set $LOCALE"
-	
-	# Set timezone
-	TIMEZONE="${RK_GENTOO_TIMEZONE:-UTC}"
-	sudo chroot . /bin/bash -c "echo '$TIMEZONE' > /etc/timezone"
-	sudo chroot . /bin/bash -c "emerge --config sys-libs/timezone-data"
-	
-	# Configure hostname
-	HOSTNAME="${RK_ROOTFS_HOSTNAME:-$RK_CHIP-gentoo}"
-	echo "$HOSTNAME" | sudo tee etc/conf.d/hostname
-	
-	# Configure networking (if dhcpcd is installed)
-	if echo "${RK_GENTOO_EXTRA_PACKAGES}" | grep -q dhcpcd; then
-		sudo chroot . /bin/bash -c "rc-update add dhcpcd default" || true
-	fi
-	
-	# Set root password
-	if [ -n "$RK_GENTOO_ROOT_PASSWORD" ]; then
-		echo "root:$RK_GENTOO_ROOT_PASSWORD" | sudo chroot . chpasswd
-	else
-		# Disable password login for root
-		sudo chroot . /bin/bash -c "passwd -l root" || true
-	fi
-}
-
-# Install packages
-install_packages() {
-	message "Installing packages..."
-	
-	cd "$GENTOO_WORK_DIR"
-	
-	# Update system
-	message "Updating @world..."
-	sudo chroot . /bin/bash -c "emerge ${RK_GENTOO_EMERGE_OPTS:---jobs=2 --quiet-build} --update --deep --newuse @world"
-	
-	# Install extra packages
-	if [ -n "$RK_GENTOO_EXTRA_PACKAGES" ]; then
-		message "Installing extra packages: $RK_GENTOO_EXTRA_PACKAGES"
-		sudo chroot . /bin/bash -c "emerge ${RK_GENTOO_EMERGE_OPTS} $RK_GENTOO_EXTRA_PACKAGES"
-	fi
-	
-	# Install appropriate init system
-	INIT_SYSTEM="${RK_GENTOO_INIT_SYSTEM:-openrc}"
-	case "$INIT_SYSTEM" in
-		openrc)
-			message "Configuring OpenRC..."
-			sudo chroot . /bin/bash -c "rc-update add local default"
-			;;
-		systemd)
-			message "Installing systemd..."
-			sudo chroot . /bin/bash -c "emerge ${RK_GENTOO_EMERGE_OPTS} sys-apps/systemd"
-			;;
-	esac
-}
-
-# Finalize rootfs
-finalize_rootfs() {
-	message "Finalizing Gentoo rootfs..."
-	
-	cd "$GENTOO_WORK_DIR"
-	
-	# Clean up
-	sudo chroot . /bin/bash -c "emerge --depclean" || true
-	sudo chroot . /bin/bash -c "eclean-dist --deep" || true
-	sudo chroot . /bin/bash -c "eclean-pkg --deep" || true
-	
-	# Remove unnecessary files
-	sudo rm -f etc/resolv.conf
-	sudo rm -rf var/tmp/portage/*
-	sudo rm -rf var/cache/distfiles/*
-	sudo rm -rf usr/src/linux*
-	
-	# Unmount bind mounts
-	for mount in proc sys dev dev/pts; do
-		if mountpoint -q "$mount" 2>/dev/null; then
-			sudo umount "$mount" || true
-		fi
-	done
-	
-	# Create final rootfs directory
-	message "Creating rootfs image..."
-	mkdir -p "$(dirname "$ROOTFS_OUTPUT_DIR")"
-	
-	# Copy rootfs to output directory  
-	if [ -d "$ROOTFS_OUTPUT_DIR" ]; then
-		sudo rm -rf "$ROOTFS_OUTPUT_DIR"
-	fi
-	sudo cp -a . "$ROOTFS_OUTPUT_DIR/"
-	
-	# Create filesystem image
-	create_gentoo_image
-	
-	message "Gentoo rootfs build completed: $ROOTFS_OUTPUT_DIR"
 }
 
 # Setup custom portage repository from base/gentoo/portage
 setup_custom_portage_repository() {
+	local target_root="$1"
 	message "Setting up custom portage repository..."
-	
-	local custom_repo_name="picocalc-overlay"
-	local custom_repo_path="/var/db/repos/$custom_repo_name"
+
+	local custom_repo_path="$target_root/var/db/repos/$CUSTOM_REPO_NAME"
 	local source_repo_path="$RK_SDK_DIR/gentoo/portage"
 	
 	# Check if our custom portage directory exists
@@ -433,51 +309,17 @@ setup_custom_portage_repository() {
 	fi
 	
 	# Create the custom repository in the chroot
-	message "Creating custom repository '$custom_repo_name'..."
-	sudo chroot . /bin/bash -c "if [ ! -d $custom_repo_path ]; then eselect repository create $custom_repo_name; else echo 'Custom repository $custom_repo_name already exists'; fi"
+	message "Creating custom repository '$CUSTOM_REPO_NAME'..."
+	sudo chroot . /bin/bash -c "if [ ! -d $custom_repo_path ]; then PORTAGE_CONFIGROOT=$target_root eselect repository create $CUSTOM_REPO_NAME; else echo 'Custom repository $CUSTOM_REPO_NAME already exists'; fi"
 	
 	# Copy our custom portage content into the repository
 	message "Copying custom packages from $source_repo_path to $custom_repo_path..."
-	
-	# Preserve existing metadata if present
-	if [ -f "$custom_repo_path/metadata/layout.conf" ]; then
-		sudo cp "$custom_repo_path/metadata/layout.conf" "/tmp/layout.conf.backup"
-	fi
-	
-	sudo cp -r "$source_repo_path"/* "$custom_repo_path/"
-	
-	# Restore metadata if we backed it up
-	if [ -f "/tmp/layout.conf.backup" ]; then
-		sudo mv "/tmp/layout.conf.backup" "$custom_repo_path/metadata/layout.conf"
-	fi
+
+	sudo mkdir -p "$GENTOO_HOST_DIR/$custom_repo_path"
+	sudo cp -r "$source_repo_path"/* "$GENTOO_HOST_DIR/$custom_repo_path/"
 	
 	# Ensure proper ownership within chroot
-	sudo chroot . /bin/bash -c "chown -R portage:portage $custom_repo_path"
-	
-	# Create metadata layout if it doesn't exist
-	if [ ! -f "$custom_repo_path/metadata/layout.conf" ]; then
-		sudo tee "$custom_repo_path/metadata/layout.conf" > /dev/null <<EOF
-masters = gentoo
-repo-name = $custom_repo_name
-auto-sync = false
-EOF
-	fi
-	
-	# Check and update manifests for our custom packages if needed
-	message "Checking manifests for custom packages..."
-	
-	# Only regenerate manifests if tools are available and there are missing manifests
-	if sudo chroot . /bin/bash -c "command -v pkgdev >/dev/null 2>&1"; then
-		message "Using pkgdev to verify/update manifests..."
-		sudo chroot . /bin/bash -c "cd $custom_repo_path && pkgdev manifest" || warning "Manifest verification failed, continuing anyway"
-	elif sudo chroot . /bin/bash -c "command -v repoman >/dev/null 2>&1"; then
-		message "Using repoman to verify/update manifests..."
-		sudo chroot . /bin/bash -c "cd $custom_repo_path && repoman manifest" || warning "Manifest verification failed, continuing anyway"
-	else
-		message "No manifest tools available, using existing manifests"
-	fi
-	
-	message "Custom portage repository '$custom_repo_name' setup completed"
+	sudo chroot $GENTOO_HOST_DIR /bin/bash -c "chown -R portage:portage $custom_repo_path"
 }
 
 # Setup crossdev toolchain in host environment
@@ -499,22 +341,23 @@ setup_crossdev_toolchain() {
 	sudo mount --rbind /dev dev/
 	sudo mount --make-rslave dev/
 	
-	# Install crossdev in host environment
+	# Install crossdev in host environment and required tools
 	message "Installing crossdev in host environment..."
 	sudo chroot . /bin/bash -c "emerge-webrsync"
-	sudo chroot . /bin/bash -c "emerge --quiet sys-devel/crossdev app-eselect/eselect-repository"
+	sudo chroot . /bin/bash -c "emerge --quiet --noreplace sys-devel/crossdev app-eselect/eselect-repository app-portage/gentoolkit"
 	
 	# Create crossdev overlay if it doesn't exist
 	message "Creating crossdev overlay..."
 	sudo chroot . /bin/bash -c "if [ ! -d /var/db/repos/crossdev ]; then eselect repository create crossdev; else echo 'crossdev repository already exists'; fi"
 	
 	# Setup custom portage repository from base/gentoo/portage
-	setup_custom_portage_repository
+	setup_custom_portage_repository /
 	
 	# Build cross-compilation toolchain
 	message "Building cross-compilation toolchain for $CTARGET..."
-	sudo chroot . /bin/bash -c "crossdev --stable --target $CTARGET"
-	
+	sudo chroot . /bin/bash -c "crossdev --stable --target $CTARGET -oS $CUSTOM_REPO_NAME"
+	sudo chroot . /bin/bash -c "crossdev --show-target-cfg --target $CTARGET"
+
 	message "Cross-compilation toolchain ready"
 }
 
@@ -526,89 +369,9 @@ setup_target_system() {
 	cd "$GENTOO_HOST_DIR"
 	
 	TARGET_ROOT="/usr/$CTARGET"
-	
-	# Determine which approach to use for base system setup
-	USE_STAGE3="${RK_GENTOO_USE_STAGE3:-n}"
-	MANUAL_BUILD="${RK_GENTOO_MANUAL_BUILD:-y}"
-	
-	# Ensure only one approach is selected
-	if [ "$USE_STAGE3" = "y" ] && [ "$MANUAL_BUILD" = "y" ]; then
-		warning "Both stage3 and manual build enabled, defaulting to manual build"
-		USE_STAGE3="n"
-	fi
-	
-	if [ "$USE_STAGE3" = "y" ]; then
-		setup_target_with_stage3
-	elif [ "$MANUAL_BUILD" = "y" ]; then
-		setup_target_manual_build
-	else
-		error "No target setup method selected. Set RK_GENTOO_USE_STAGE3=y or RK_GENTOO_MANUAL_BUILD=y"
-	fi
-	
-	# Common configuration for both approaches
-	setup_target_common_config
-	
-	message "Target system base configuration completed"
-}
+	PORTAGE_CONFIGROOT=$TARGET_ROOT
 
-# Setup target system using stage3 tarball approach
-setup_target_with_stage3() {
-	message "Setting up target system using stage3 tarball approach..."
-	
-	# Check if stage3 has already been extracted
-	if [ -d "$TARGET_ROOT/etc" ] && [ -f "$TARGET_ROOT/etc/gentoo-release" ]; then
-		message "Stage3 already extracted to $TARGET_ROOT, skipping extraction"
-		return 0
-	fi
-	
-	message "Priming crossdev environment with $TARGET_STAGE3_VARIANT stage3..."
-	
-	# Create target root directory
-	sudo mkdir -p "$TARGET_ROOT"
-	
-	# Download target stage3 for priming
-	MIRROR="https://distfiles.gentoo.org/releases"
-	
-	# Get latest target stage3 URL
-	message "Fetching latest $TARGET_STAGE3_VARIANT stage3 info..."
-	STAGE3_LIST_FILE="/tmp/latest-stage3-$TARGET_STAGE3_VARIANT.txt"
-	if ! wget -q "$MIRROR/$TARGET_ARCH_PATH/latest-stage3-$TARGET_STAGE3_VARIANT.txt" -O "$STAGE3_LIST_FILE"; then
-		error "Failed to download $TARGET_STAGE3_VARIANT stage3 list file"
-	fi
-	
-	message "Verifying PGP signature..."
-	LATEST_FILE=$(gpg --decrypt "$STAGE3_LIST_FILE" 2>/dev/null | \
-		grep '\.tar\.' | tail -n1 | cut -d' ' -f1)
-	rm -f "$STAGE3_LIST_FILE"
-	
-	if [ -z "$LATEST_FILE" ]; then
-		error "Could not determine latest $TARGET_STAGE3_VARIANT stage3 file"
-	fi
-	
-	message "Latest $TARGET_STAGE3_VARIANT stage3 file: $LATEST_FILE"
-	
-	STAGE3_URL="$MIRROR/$TARGET_ARCH_PATH/$LATEST_FILE"
-	STAGE3_FILE="$ROOTFS_OUTPUT_DIR/$(basename "$LATEST_FILE")"
-	
-	# Download stage3 if not already present
-	if [ ! -f "$STAGE3_FILE" ]; then
-		message "Downloading: $STAGE3_URL"
-		wget -c "$STAGE3_URL" -O "$STAGE3_FILE"
-	else
-		message "Stage3 file already exists: $STAGE3_FILE"
-	fi
-	
-	# Extract target stage3 to target root
-	# Use official crossdev recommended options: --exclude=dev --skip-old-files
-	message "Extracting $TARGET_STAGE3_VARIANT stage3 to $TARGET_ROOT..."
-	sudo tar xpf "$STAGE3_FILE" -C "$TARGET_ROOT" --xattrs-include='*.*' --numeric-owner --exclude=dev --skip-old-files
-	
-	message "Stage3 tarball extracted successfully"
-}
-
-# Setup target system using manual build approach
-setup_target_manual_build() {
-	message "Setting up target system using manual build..."
+	message "Setting up target system..."
 	
 	# Create minimal target root structure if it doesn't exist
 	if [ ! -d "$TARGET_ROOT" ]; then
@@ -616,113 +379,36 @@ setup_target_manual_build() {
 		message "Created target root directory: $TARGET_ROOT"
 	fi
 	
-	# The manual build will be done in cross_compile_packages function
-	# This function just ensures the target root exists and is ready
-	message "Target root prepared for manual build approach"
-}
-
-# Common target configuration for both approaches
-setup_target_common_config() {
-	message "Applying common target system configuration..."
-	# Common target configuration for both approaches
-setup_target_common_config() {
-	message "Applying common target system configuration..."
-	
 	# Set target profile
 	if [ -n "$RK_GENTOO_PROFILE" ]; then
 		message "Setting target profile to $RK_GENTOO_PROFILE"
 		sudo chroot . /bin/bash -c "PORTAGE_CONFIGROOT=$TARGET_ROOT eselect profile set $RK_GENTOO_PROFILE"
 	fi
-	
-	# Configure target make.conf
-	message "Configuring target make.conf..."
-	TARGET_PORTAGE_DIR="/usr/$CTARGET/etc/portage"
-	sudo mkdir -p "$TARGET_PORTAGE_DIR"
-	
-	# Create target-specific make.conf
-	cat <<EOF | sudo tee "usr/$CTARGET/etc/portage/make.conf"
-# Cross-compilation make.conf for $CTARGET
 
-# Architecture-specific settings
-CHOST="$CTARGET"
-EOF
+	setup_custom_portage_repository "$TARGET_ROOT"
 
-	if [ "$RK_ARCH" = "arm64" ]; then
-		cat <<EOF | sudo tee -a "usr/$CTARGET/etc/portage/make.conf"
-COMMON_FLAGS="-O2 -pipe -march=armv8-a"
-CPU_FLAGS_ARM="edsp neon thumb vfp vfpv3 vfpv4 vfp-d32 crc32 v4 v5 v6 v7 v8 thumb2"
-EOF
+	local source_config_dir="$RK_SDK_DIR/gentoo/etc"
+	
+	message "Copying build config files from $source_config_dir..."
+	
+	if [ ! -d "$source_config_dir" ]; then
+		warning "Source config directory not found: $source_config_dir"
 	else
-		cat <<EOF | sudo tee -a "usr/$CTARGET/etc/portage/make.conf"
-COMMON_FLAGS="-O2 -pipe -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard"
-CPU_FLAGS_ARM="edsp neon thumb vfp vfpv3 vfpv4 vfp-d32 v4 v5 v6 v7 thumb2"
-EOF
+		sudo cp -r "$source_config_dir"/* "$TARGET_ROOT/etc/"
+		message "Build config files copied successfully"
 	fi
-
-	cat <<EOF | sudo tee -a "usr/$CTARGET/etc/portage/make.conf"
-CFLAGS="\${COMMON_FLAGS}"
-CXXFLAGS="\${COMMON_FLAGS}"
-FCFLAGS="\${COMMON_FLAGS}"
-FFLAGS="\${COMMON_FLAGS}"
-
-# Embedded system optimization
-MAKEOPTS="-j2"
-
-# USE flags for embedded ARM system
-USE="${RK_GENTOO_USE_FLAGS:--X -gtk -qt5 -kde -gnome minimal embedded -systemd openrc}"
-
-# Features
-FEATURES="buildpkg parallel-fetch"
-
-# Portage directories
-PORTDIR="/var/db/repos/gentoo"
-DISTDIR="/var/cache/distfiles"
-PKGDIR="/var/cache/binpkgs"
-
-# Locale and timezone
-LC_MESSAGES=C
-TIMEZONE="${RK_GENTOO_TIMEZONE:-UTC}"
-
-# Accept licenses
-ACCEPT_LICENSE="*"
-
-# Emerge options for cross-compilation
-EMERGE_DEFAULT_OPTS="--jobs=2 --load-average=2"
-EOF
-
-	if [ "${RK_GENTOO_CCACHE:-y}" = "y" ]; then
-		cat <<EOF | sudo tee -a "usr/$CTARGET/etc/portage/make.conf"
-
-# ccache configuration
-FEATURES="\${FEATURES} ccache"
-CCACHE_SIZE="${RK_GENTOO_CCACHE_SIZE:-1G}"
-EOF
-	fi
-
-	# Setup package.use for embedded optimizations
-	sudo mkdir -p "usr/$CTARGET/etc/portage/package.use"
-	cat <<EOF | sudo tee "usr/$CTARGET/etc/portage/package.use/embedded"
-# Embedded system optimizations
-sys-apps/busybox static
-sys-apps/util-linux static-libs
-sys-fs/udev hwdb
-net-misc/dhcpcd embedded ipv6
-sys-devel/gcc -fortran -go
-sys-libs/glibc -multilib
-EOF
 
 	# Setup kernel sources for target system
 	message "Setting up kernel sources for target..."
-	sudo mkdir -p "usr/$CTARGET/usr/src"
+	sudo mkdir -p "$TARGET_ROOT/usr/src"
 	
 	# Create symlink to kernel sources from SDK
 	if [ -d "/opt/Lyra-SDK/kernel-6.1" ]; then
-		sudo ln -sf "/opt/Lyra-SDK/kernel-6.1" "usr/$CTARGET/usr/src/linux"
-		message "Kernel sources linked at usr/$CTARGET/usr/src/linux"
+		sudo ln -sf "/opt/Lyra-SDK/kernel-6.1" "$TARGET_ROOT/usr/src/linux"
+		message "Kernel sources linked at $TARGET_ROOT/usr/src/linux"
 	else
 		warning "Kernel sources not found at /opt/Lyra-SDK/kernel-6.1"
 	fi
-}
 }
 
 # Cross-compile packages for target
@@ -780,7 +466,7 @@ cross_compile_packages() {
 	case "$INIT_SYSTEM" in
 		openrc)
 			message "Installing OpenRC..."
-			sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT $CROSS_EMERGE --noreplace sys-apps/openrc"
+			sudo chroot . /bin/bash -c "ROOT=$TARGET_ROOT SYSROOT=$TARGET_ROOT $CROSS_EMERGE --noreplace sys-apps/openrc::$CUSTOM_REPO_NAME"
 			;;
 		systemd)
 			message "Installing systemd..."

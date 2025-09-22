@@ -1,0 +1,7 @@
+# Embedded system optimizations
+sys-apps/busybox static
+sys-apps/util-linux static-libs
+sys-fs/udev hwdb
+net-misc/dhcpcd embedded ipv6
+sys-devel/gcc -fortran -go
+sys-libs/glibc -multilib

@@ -31,7 +31,7 @@ RK_GENTOO_KERNEL_GENPATCHES=y
 RK_GENTOO_INIT_OPENRC=y
 RK_GENTOO_INIT_SYSTEM="openrc"
 RK_GENTOO_EMERGE_OPTS="--jobs=2 --load-average=2 --quiet-build"
-RK_GENTOO_EXTRA_PACKAGES="app-editors/nano net-misc/dhcpcd sys-apps/usbutils app-shells/bash"
+RK_GENTOO_EXTRA_PACKAGES="app-editors/nano app-editors/vim net-misc/dhcpcd sys-apps/usbutils app-shells/bash sys-devel/android-adbd"
 RK_GENTOO_LOCALE="en_US.UTF-8"
 RK_GENTOO_TIMEZONE="UTC"
 RK_GENTOO_CCACHE=y
