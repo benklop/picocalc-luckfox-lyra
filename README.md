@@ -1,6 +1,12 @@
 # PicoCalc Lyra Build System
 
-This repository provides a Docker-based build system for creating custom BuildRoot Linux images for the LuckFox Lyra, specifically tailored to run on the ClockworkPi PicoCalc.
+This repository provides a Docker-based build system for creating custom Linux images for the LuckFox Lyra, specifically tailored to run on the ClockworkPi PicoCalc.
+
+## Supported Linux Distributions
+
+- **BuildRoot** (default) - Lightweight embedded Linux
+- **Gentoo Linux** - Advanced users who want full package management and customization
+  - See [GENTOO.md](GENTOO.md) for detailed Gentoo build instructions
 
 ## ⚠️ Work in Progress
 

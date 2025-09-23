@@ -559,6 +559,22 @@ create_target_rootfs() {
 		fi
 	done
 
+	# Install kernel modules if enabled
+	if [ "$RK_ROOTFS_INSTALL_MODULES" = "y" ]; then
+		message "Installing kernel modules to rootfs..."
+		KERNEL_MODULES_DIR="/opt/Lyra-SDK/output/kernel-modules"
+		if [ -d "$KERNEL_MODULES_DIR/lib/modules" ]; then
+			sudo mkdir -p "$ROOTFS_OUTPUT_DIR/lib"
+			sudo cp -r "$KERNEL_MODULES_DIR/lib/modules" "$ROOTFS_OUTPUT_DIR/lib/"
+			message "Kernel modules installed from $KERNEL_MODULES_DIR/lib/modules"
+		else
+			warning "Kernel modules directory not found at $KERNEL_MODULES_DIR/lib/modules"
+			warning "Modules may not be available in the target system"
+		fi
+	else
+		message "Kernel module installation disabled (RK_ROOTFS_INSTALL_MODULES not set to 'y')"
+	fi
+
 	message "Target rootfs created"
 }
 
