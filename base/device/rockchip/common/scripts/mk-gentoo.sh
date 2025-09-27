@@ -196,8 +196,6 @@ setup_host_environment() {
 prepare_chroot() {
 	message "Preparing chroot environment..."
 	
-	cd "$GENTOO_WORK_DIR"
-	
 	# Copy DNS info
 	sudo cp /etc/resolv.conf etc/
 	
@@ -228,21 +226,8 @@ FCFLAGS="\${COMMON_FLAGS}"
 FFLAGS="\${COMMON_FLAGS}"
 
 # Architecture specific settings for ARM32 hardfp
-EOF
-
-	if [ "$RK_ARCH" = "arm64" ]; then
-		cat <<EOF | sudo tee -a etc/portage/make.conf
-CHOST="aarch64-unknown-linux-gnu"
-CPU_FLAGS_ARM="edsp neon thumb vfp vfpv3 vfpv4 vfp-d32 crc32 v4 v5 v6 v7 v8 thumb2"
-EOF
-	else
-		cat <<EOF | sudo tee -a etc/portage/make.conf
 CHOST="armv7a-hardfloat-linux-gnueabi"
 CPU_FLAGS_ARM="edsp neon thumb vfp vfpv3 vfpv4 vfp-d32 v4 v5 v6 v7 thumb2"
-EOF
-	fi
-
-	cat <<EOF | sudo tee -a etc/portage/make.conf
 
 # Number of parallel make jobs (reduced for ARM32)
 MAKEOPTS="-j\$(( \$(nproc) < 4 ? \$(nproc) : 4 ))"
