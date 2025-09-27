@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-KIWIX_TOOLS_VERSION = main
+KIWIX_TOOLS_VERSION = acad8a85ab4706ff527cabdaac4635a930f3bdd4
 KIWIX_TOOLS_SITE = $(call github,kiwix,kiwix-tools,$(KIWIX_TOOLS_VERSION))
 KIWIX_TOOLS_SOURCE = kiwix-tools-$(KIWIX_TOOLS_VERSION).tar.gz
 KIWIX_TOOLS_LICENSE = GPL-3.0+
