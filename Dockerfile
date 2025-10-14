@@ -38,6 +38,7 @@ RUN apt-get update && apt-get install -y \
     expat \
     expect \
     expect-dev \
+    extra-cmake-modules \
     fakeroot \
     file \
     flex \
@@ -56,6 +57,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libtool \
     live-build \
+    libncursesw5-dev \
     make \
     ncurses-dev \
     patchelf \
