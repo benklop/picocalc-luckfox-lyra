@@ -4,9 +4,15 @@
 #
 ################################################################################
 
-X48NG_VERSION = 7adbd27f66e7e04ee3c7288d39469585f1d
-X48NG_SITE = https://github.com/gwenhael-le-moine/x48ng
+# Git repository configuration
+X48NG_VERSION = dd7a3e74de26040ca6118bf68181387eefc56ad1
+X48NG_SITE = https://github.com/hpsaturn/x48ng
 X48NG_SITE_METHOD = git
+
+# For local source testing - comment out above and uncomment below
+# X48NG_SITE = $(TOPDIR)/../x48ng
+# X48NG_SITE_METHOD = local
+
 X48NG_LICENSE = GPL2
 X48NG_LICENSE_FILES = COPYING
 X48NG_DEPENDENCIES = ncurses readline lua
