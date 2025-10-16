@@ -4,9 +4,15 @@
 #
 ################################################################################
 
-X48NG_VERSION = 6a6b912e796f259231e1e42c5e3c7e51a37121e7
-X48NG_SITE = https://github.com/hpsaturn/x48ng.git
+# Git repository configuration
+X48NG_VERSION = dd7a3e74de26040ca6118bf68181387eefc56ad1
+X48NG_SITE = https://github.com/hpsaturn/x48ng
 X48NG_SITE_METHOD = git
+
+# For local source testing - comment out above and uncomment below
+# X48NG_SITE = $(TOPDIR)/../x48ng
+# X48NG_SITE_METHOD = local
+
 X48NG_LICENSE = GPL2
 X48NG_LICENSE_FILES = COPYING
 X48NG_DEPENDENCIES = ncurses readline lua
@@ -20,7 +26,7 @@ X48NG_DEPENDENCIES = \
 
 X48NG_MAKE_ENV = \
   WITH_X11=no \
-  WITH_SDL2=no \
+  WITH_SDL=no \
   PKG_CONFIG_SYSROOT_DIR="$(STAGING_DIR)" \
   PKG_CONFIG_PATH="$(STAGING_DIR)/usr/lib/pkgconfig"
 
@@ -30,7 +36,7 @@ X48NG_MAKE_ENV = \
 
 X48NG_MAKE_OPTS = \
   WITH_X11=no \
-  WITH_SDL2=no \
+  WITH_SDL=no \
   HAS_X11=0 \
   PREFIX=/usr \
   CC="$(TARGET_CC)" \
