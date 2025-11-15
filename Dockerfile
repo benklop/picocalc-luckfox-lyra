@@ -92,7 +92,7 @@ WORKDIR /opt/Lyra-SDK
 RUN mkdir -p /opt/Lyra-SDK && \
     mkdir -p /opt/download && \
     mkdir -p /opt/ccache && \
-    useradd -d /opt/Lyra-SDK -u $DOCKER_USERID $DOCKER_USER && \
+    useradd -d /opt/Lyra-SDK -u $DOCKER_USERID $DOCKER_USER || true && \
     chown $DOCKER_USER:$DOCKER_USER /opt/Lyra-SDK && \
     chown $DOCKER_USER:$DOCKER_USER /opt/download && \
     chown $DOCKER_USER:$DOCKER_USER /opt/ccache
