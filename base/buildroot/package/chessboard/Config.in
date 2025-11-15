@@ -1,0 +1,11 @@
+config BR2_PACKAGE_CHESSBOARD
+  bool "chessboard"
+  select BR2_PACKAGE_NCURSES
+  select BR2_PACKAGE_SDL2
+  select BR2_PACKAGE_SDL2_TTF
+  select BR2_PACKAGE_SDL2_IMAGE
+  select BR2_PACKAGE_YAML_CPP
+
+  help
+    Chessboard frontend for GNUChess using SDL or ncurses
+    https://github.com/hpsaturn/chessboard.git
